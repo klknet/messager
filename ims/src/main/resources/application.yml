@@ -1,0 +1,15 @@
+spring:
+  data:
+    mongodb:
+      host: 39.106.133.40
+      port: 27017
+      authentication-database: ims
+      username: klk_ims
+      password: ims123456
+      auth: true
+      database: ims
+
+server:
+  servlet:
+    context-path: /ims
+  port: 8080

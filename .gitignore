@@ -1,0 +1,6 @@
+/.gradle/
+/.idea/
+/out/
+/ims/out/
+/ims/build/
+/model/out/
