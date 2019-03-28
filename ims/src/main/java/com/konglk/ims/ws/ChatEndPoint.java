@@ -12,8 +12,9 @@ import javax.websocket.Session;
 import javax.websocket.server.ServerEndpoint;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.web.socket.server.standard.SpringConfigurator;
 
-@ServerEndpoint("/ws/chat")
+@ServerEndpoint(value = "/ws/chat")
 public class ChatEndPoint
 {
   private static final AtomicInteger connectionIds = new AtomicInteger();
@@ -32,7 +33,7 @@ public class ChatEndPoint
   @OnOpen
   public void connect(Session session)
   {
-    logger.debug("new connection active {}", this.nickname);
+    logger.info("new connection active {}", this.nickname);
     this.session = session;
     ChatClient.addClient(this.nickname, this);
   }
@@ -50,14 +51,14 @@ public class ChatEndPoint
   public void close()
   {
     ChatClient.removeClient(this.nickname);
-    logger.debug("client {} leaves", this.nickname);
+    logger.info("client {} leaves", this.nickname);
   }
   
   @OnError
   public void onError(Throwable t)
     throws Throwable
   {
-    logger.error("WebSocket ����" + t);
+    logger.error("WebSocket error" + t);
   }
   
   public String getUserId()
