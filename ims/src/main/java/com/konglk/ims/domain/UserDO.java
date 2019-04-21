@@ -2,6 +2,8 @@ package com.konglk.ims.domain;
 
 import java.util.Date;
 import java.util.List;
+
+import org.springframework.data.annotation.Transient;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
@@ -40,6 +42,9 @@ public class UserDO
   private List<FriendDO> friends;
   @Field("black_list")
   private List<FriendDO> blackList;
+
+  @Transient
+  private String ticket;
   
   public String getUserId()
   {
@@ -219,5 +224,13 @@ public class UserDO
   public void setBlackList(List<FriendDO> blackList)
   {
     this.blackList = blackList;
+  }
+
+  public String getTicket() {
+    return ticket;
+  }
+
+  public void setTicket(String ticket) {
+    this.ticket = ticket;
   }
 }

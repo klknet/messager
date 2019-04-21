@@ -14,6 +14,7 @@ public class MessageDO
   @Field("conversation_id")
   private String conversationId;
   @Field("create_time")
+  @Indexed(name="i_createtime")
   private Date createTime;
   private String content;
   @Indexed(name="i_user_id")
@@ -22,8 +23,8 @@ public class MessageDO
   @Indexed(name="i_dest_id")
   @Field("dest_id")
   private String destId;
-  private int type;
-  
+  private int type; //0-文字 1-图片 2-表情 3-语音 4-视频
+
   public String getMessageId()
   {
     return this.messageId;
@@ -93,4 +94,5 @@ public class MessageDO
   {
     this.type = type;
   }
+
 }
