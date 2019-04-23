@@ -19,10 +19,10 @@ repositories {
 
 dependencies {
     compile project(':model')
-//    compile group: 'org.springframework.boot', name: 'spring-boot-starter'
-//    compile ("org.springframework.boot:spring-boot-starter-web")
     compile group: 'org.springframework.boot', name: 'spring-boot-starter-websocket'
     compile group: 'org.springframework.boot', name: 'spring-boot-starter-data-mongodb'
+    compile group: 'org.springframework.boot', name: 'spring-boot-starter-data-redis'
+    compile group: 'redis.clients', name: 'jedis', version: '2.9.0'
     compile group: 'org.springframework.boot', name: 'spring-boot-starter-test'
     providedRuntime('org.springframework.boot:spring-boot-starter-tomcat')
     compile group: 'org.apache.activemq', name: 'activemq-client', version: '5.15.7'

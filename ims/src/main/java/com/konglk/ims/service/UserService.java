@@ -26,6 +26,8 @@ public class UserService {
     private static final String SALT = "konglk";
     @Autowired
     private MongoTemplate mongoTemplate;
+    @Autowired
+    private ChatClient chatClient;
 
     public UserDO login(String unique, String pwd) {
         String raw = DecodeUtils.decode(pwd, "konglk");
@@ -41,7 +43,7 @@ public class UserService {
         if (StringUtils.equals(raw, userDO.getRawPwd())) {
             //登录凭证
             String ticket = UUID.randomUUID().toString();
-            ChatClient.addTicket(userDO.getUserId(), ticket);
+            chatClient.addTicket(userDO.getUserId(), ticket);
             userDO.setTicket(ticket);
             return userDO;
         }

@@ -18,10 +18,12 @@ public class ChatEndPoint {
     private String userId;
     private Session session;
     private MessageHandler messageHandler;
+    private ChatClient chatClient;
 
     public ChatEndPoint() {
         this.nickname = ("client:" + connectionIds.getAndIncrement());
         messageHandler = SpringUtils.getBean(MessageHandler.class);
+        chatClient = SpringUtils.getBean(ChatClient.class);
     }
 
     @OnOpen
@@ -41,7 +43,7 @@ public class ChatEndPoint {
 
     @OnClose
     public void close() {
-        ChatClient.removeClient(this.nickname);
+        chatClient.removeClient(this.userId);
         logger.info("client {} leaves", this.nickname);
     }
 

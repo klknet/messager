@@ -6,6 +6,7 @@ import com.konglk.ims.domain.UserDO;
 import com.konglk.ims.service.ChatProducer;
 import com.konglk.ims.service.UserService;
 import com.konglk.model.Authentication;
+import com.konglk.model.ErrorStatus;
 import com.konglk.model.Request;
 import com.konglk.model.Response;
 
@@ -21,6 +22,8 @@ public class MessageHandler {
     private UserService userService;
     @Autowired
     private ChatProducer producer;
+    @Autowired
+    private ChatClient chatClient;
 
     public void process(Request request, ChatEndPoint client)
             throws IOException {
@@ -30,21 +33,24 @@ public class MessageHandler {
                 break;
             case 1:
                 Authentication authentication = JSON.parseObject(request.getData(), Authentication.class);
-                String ticket = ChatClient.getTicket(authentication.getUserId());
+                String ticket = chatClient.getTicket(authentication.getUserId());
+                if (StringUtils.isEmpty(authentication.getUserId())) {
+                    client.getSession().close();
+                }
                 if (StringUtils.isNotEmpty(request.getTicket()) &&
                         StringUtils.equals(ticket, request.getTicket())){
                     client.setUserId(authentication.getUserId());
-                    ChatClient.addClient(authentication.getUserId(), client);
+                    chatClient.addClient(authentication.getUserId(), client);
                     client.getSession().getBasicRemote()
                             .sendText(JSON.toJSONString(new Response(200, "authentication success", "", 1)));
                 }else {
-                    client.getSession().close();
+                    client.getSession().getBasicRemote().sendText(JSON.toJSONString(new Response(ErrorStatus.TICKET_ERROR, 1)));
                 }
 
                 break;
             case 2:
                 MessageDO messageDO = JSON.parseObject(request.getData(), MessageDO.class);
-                String uId = ChatClient.getTicket(messageDO.getUserId());
+                String uId = chatClient.getTicket(messageDO.getUserId());
                 if (StringUtils.isNotEmpty(request.getTicket()) &&
                         StringUtils.equals(uId, request.getTicket())){
                     //消息发送到mq

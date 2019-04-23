@@ -4,12 +4,20 @@ package com.konglk.model;
  * Created by konglk on 2019/3/27.
  */
 public class Response {
+
+    public static int TICKET_ERROR = 60001;
+
     private int code;
     private String message;
     private String data;
     private int type;
 
-    public Response() {
+    public Response() {}
+
+    public Response(ErrorStatus errorStatus, int type) {
+        this.code = errorStatus.code;
+        this.message = errorStatus.message;
+        this.type = type;
     }
 
     public Response(int code, String message, String data, int type) {

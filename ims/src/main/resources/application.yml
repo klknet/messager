@@ -11,6 +11,18 @@ spring:
       min-connection-per-host: 10
       max-connection-per-host: 100
       max-wait-time: 10000
+  redis:
+    host: 39.106.133.40
+    port: 6379
+    password: redis_ims
+    lettuce:
+      pool:
+        max-active: 100
+        max-idle: 3
+        max-wait: 10000
+    timeout: 5000
+
+
 
 server:
   servlet:

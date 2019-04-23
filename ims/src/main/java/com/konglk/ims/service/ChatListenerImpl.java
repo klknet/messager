@@ -28,6 +28,8 @@ public class ChatListenerImpl implements MessageListener {
 
     @Autowired
     private MessageService messageService;
+    @Autowired
+    private ChatClient chatClient;
 
     @Override
     public void onMessage(Message message) {
@@ -38,7 +40,7 @@ public class ChatListenerImpl implements MessageListener {
                 MessageDO messageDO = JSON.parseObject(text, MessageDO.class);
                 messageService.insert(messageDO);
                 String destId = messageDO.getDestId();
-                ChatEndPoint client = ChatClient.getClient(destId);
+                ChatEndPoint client = chatClient.getClient(destId);
                 if(client == null)
                     return;
                 Response resp = new Response();
