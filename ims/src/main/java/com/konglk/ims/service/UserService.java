@@ -89,4 +89,10 @@ public class UserService {
         logger.info("add friend {}", f.getUsername());
         return this.mongoTemplate.findAndModify(query, update, UserDO.class);
     }
+
+    public UserDO findByUserId(String userId) {
+        Query query = new Query(Criteria.where("userId").is(userId));
+        UserDO userDO = mongoTemplate.findOne(query, UserDO.class);
+        return userDO;
+    }
 }
