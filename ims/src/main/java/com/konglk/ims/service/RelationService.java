@@ -1,5 +1,6 @@
 package com.konglk.ims.service;
 
+import com.konglk.ims.domain.FriendDO;
 import com.konglk.ims.domain.FriendRequestDO;
 import com.konglk.ims.domain.UserDO;
 import org.slf4j.Logger;
@@ -34,6 +35,13 @@ public class RelationService {
         UserDO userDO = userService.findByUserId(userId);
         if(userDO == null)
             throw new IllegalArgumentException("userId not exists!");
+        if(userDO.getFriends() != null) {
+            for(FriendDO friendDO: userDO.getFriends()) {
+                if (friendDO.getUserId().equals(destId)) {
+                    throw new IllegalArgumentException("destId was friend");
+                }
+            }
+        }
         FriendRequestDO requestDO = new FriendRequestDO();
         requestDO.setCreatetime(new Date());
         requestDO.setDestId(destId);

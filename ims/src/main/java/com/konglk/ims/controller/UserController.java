@@ -2,11 +2,9 @@ package com.konglk.ims.controller;
 
 import com.konglk.ims.domain.UserDO;
 import com.konglk.ims.service.UserService;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import javax.validation.constraints.NotNull;
 
@@ -29,5 +27,12 @@ public class UserController {
     @PostMapping({"/addFriend"})
     public UserDO addFriend(String userId, String destId, String remark) {
         return this.userService.addFriend(userId, destId, remark);
+    }
+
+    @GetMapping("/find")
+    public Object findUser(String username) {
+        if(StringUtils.isEmpty(username))
+            return null;
+        return userService.findUser(username);
     }
 }

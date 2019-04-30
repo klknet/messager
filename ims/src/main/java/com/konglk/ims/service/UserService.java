@@ -5,14 +5,22 @@ import com.konglk.ims.domain.UserDO;
 import com.konglk.ims.util.DecodeUtils;
 
 import java.util.Date;
+import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import com.konglk.ims.ws.ChatClient;
+import com.konglk.model.UserPO;
+import com.mongodb.BasicDBObject;
+import com.mongodb.QueryBuilder;
 import org.apache.commons.lang3.StringUtils;
+import org.bson.Document;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.BasicQuery;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
@@ -94,5 +102,23 @@ public class UserService {
         Query query = new Query(Criteria.where("userId").is(userId));
         UserDO userDO = mongoTemplate.findOne(query, UserDO.class);
         return userDO;
+    }
+
+    /*
+    模糊查询用户信息
+     */
+    public List<UserPO> findUser(String username) {
+        Document queryObj = new Document("username", new Document("$regex", "^.*" + username + ".*$"));
+        Document fieldObj = new Document();
+        for(String field: UserPO.fields) {
+            fieldObj.put(field, 1);
+        }
+        BasicQuery basicQuery = new BasicQuery(queryObj, fieldObj);
+        List<UserDO> userDOs = mongoTemplate.find(basicQuery, UserDO.class);
+        return userDOs.stream().map(userDO -> {
+            UserPO userPO = new UserPO();
+            BeanUtils.copyProperties(userDO, userPO);
+            return userPO;
+        }).collect(Collectors.toList());
     }
 }
