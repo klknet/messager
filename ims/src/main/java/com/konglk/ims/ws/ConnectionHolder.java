@@ -9,7 +9,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Component
-public class ChatClient {
+public class ConnectionHolder {
     private static final Map<String, ChatEndPoint> clientMap = new ConcurrentHashMap(100);
 
     @Autowired

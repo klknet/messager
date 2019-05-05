@@ -1,7 +1,7 @@
 package com.konglk.ims.service;
 
-import com.konglk.ims.domain.MessageDO;
 import org.apache.activemq.ActiveMQConnectionFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
@@ -14,6 +14,8 @@ import javax.jms.*;
 public class ChatProducer {
     @Resource(name = "amqFactory")
     private ActiveMQConnectionFactory factory;
+    @Autowired
+    private RandomQueueName randomQueueName;
 
     public void send(String text) {
         QueueConnection connection = null;
@@ -21,7 +23,7 @@ public class ChatProducer {
             connection = factory.createQueueConnection();
             connection.start();
             QueueSession session = connection.createQueueSession(false, Session.AUTO_ACKNOWLEDGE);
-            MessageProducer producer = session.createProducer(session.createQueue(QueueConsumer.chatQueue));
+            MessageProducer producer = session.createProducer(session.createQueue(randomQueueName.getQueueName()));
             TextMessage textMessage = session.createTextMessage(text);
             producer.send(textMessage);
         } catch (JMSException e) {

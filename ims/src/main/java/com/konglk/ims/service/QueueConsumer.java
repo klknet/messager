@@ -17,43 +17,42 @@ import javax.jms.*;
 public class QueueConsumer {
 
     private Logger logger = LoggerFactory.getLogger(getClass());
-
     @Resource(name = "amqFactory")
     private ActiveMQConnectionFactory factory;
     @Autowired
     private ChatListenerImpl chatListner;
-    public static String chatQueue = "ims_chat";
+    @Autowired
+    private RandomQueueName randomQueueName;
     private int retryLimit = 10;
 
     @PostConstruct
     public void consume() {
-        QueueConnection connection = null;
         try {
-            start(connection);
-        } catch (Exception e) {
+            start();
+        } catch (JMSException e) {
             logger.error(e.getMessage(), e);
-            if(connection != null) {
-                try {
-                    connection.close();
-                } catch (JMSException ex) {
-                }
-            }
             if(retryLimit-- >= 0) {
                 try {
-                    start(connection);
+                    logger.info("retry connect to active mq for {} times", retryLimit);
+                    start();
                 } catch (JMSException ex) {
+                    logger.error(e.getMessage(), e);
                 }
             }
         }
     }
 
-    private void start(QueueConnection connection) throws JMSException {
-        connection = factory.createQueueConnection();
-        connection.start();
-        QueueSession session = connection.createQueueSession(false, Session.AUTO_ACKNOWLEDGE);
-        Queue queue = session.createQueue(chatQueue);
-        MessageConsumer consumer = session.createConsumer(queue);
-        consumer.setMessageListener(chatListner);
-        logger.info("consumer ready");
+    private void start() throws JMSException {
+        String[] names = randomQueueName.queues();
+        for(String name: names) {
+            QueueConnection connection = factory.createQueueConnection();
+            connection.start();
+            QueueSession session = connection.createQueueSession(false, Session.AUTO_ACKNOWLEDGE);
+            Queue queue = session.createQueue(name);
+            MessageConsumer consumer = session.createConsumer(queue);
+            consumer.setMessageListener(chatListner);
+            logger.info("consumer ready for {}", name);
+        }
     }
+
 }

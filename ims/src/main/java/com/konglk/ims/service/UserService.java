@@ -9,10 +9,8 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import com.konglk.ims.ws.ChatClient;
+import com.konglk.ims.ws.ConnectionHolder;
 import com.konglk.model.UserPO;
-import com.mongodb.BasicDBObject;
-import com.mongodb.QueryBuilder;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
 import org.slf4j.Logger;
@@ -35,7 +33,7 @@ public class UserService {
     @Autowired
     private MongoTemplate mongoTemplate;
     @Autowired
-    private ChatClient chatClient;
+    private ConnectionHolder connectionHolder;
 
     public UserDO login(String unique, String pwd) {
         String raw = DecodeUtils.decode(pwd, "konglk");
@@ -51,7 +49,7 @@ public class UserService {
         if (StringUtils.equals(raw, userDO.getRawPwd())) {
             //登录凭证
             String ticket = UUID.randomUUID().toString();
-            chatClient.addTicket(userDO.getUserId(), ticket);
+            connectionHolder.addTicket(userDO.getUserId(), ticket);
             userDO.setTicket(ticket);
             return userDO;
         }
@@ -84,7 +82,7 @@ public class UserService {
         FriendDO f = new FriendDO();
         f.setUserId(friend.getUserId());
         f.setProfileUrl(friend.getProfileUrl());
-        f.setGender(f.getGender());
+        f.setGender(friend.getGender());
         f.setCountry(friend.getCountry());
         f.setCity(friend.getCity());
         f.setRemark(StringUtils.isEmpty(remark) ? friend.getNickname() : remark);

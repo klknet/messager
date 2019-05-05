@@ -14,16 +14,20 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class ChatEndPoint {
     private static final AtomicInteger connectionIds = new AtomicInteger();
     private static final Logger logger = LoggerFactory.getLogger(ChatEndPoint.class);
+
     private String nickname;
     private String userId;
+    private String ticket;
+    private boolean auth;
+
     private Session session;
     private MessageHandler messageHandler;
-    private ChatClient chatClient;
+    private ConnectionHolder connectionHolder;
 
     public ChatEndPoint() {
         this.nickname = ("client:" + connectionIds.getAndIncrement());
         messageHandler = SpringUtils.getBean(MessageHandler.class);
-        chatClient = SpringUtils.getBean(ChatClient.class);
+        connectionHolder = SpringUtils.getBean(ConnectionHolder.class);
     }
 
     @OnOpen
@@ -43,7 +47,7 @@ public class ChatEndPoint {
 
     @OnClose
     public void close() {
-        chatClient.removeClient(this.userId);
+        connectionHolder.removeClient(this.userId);
         logger.info("client {} leaves", this.nickname);
     }
 
@@ -59,6 +63,22 @@ public class ChatEndPoint {
 
     public void setUserId(String userId) {
         this.userId = userId;
+    }
+
+    public String getTicket() {
+        return ticket;
+    }
+
+    public void setTicket(String ticket) {
+        this.ticket = ticket;
+    }
+
+    public boolean isAuth() {
+        return auth;
+    }
+
+    public void setAuth(boolean auth) {
+        this.auth = auth;
     }
 
     public String getNickname() {

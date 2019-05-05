@@ -25,8 +25,8 @@ public class MongoSettingProperties {
     private Integer threadsAllowedToBlockForConnectionMultiplier = 5;
     private Integer serverSelectionTimeout = 30000;
     private Integer maxWaitTime = 120000;
-    private Integer maxConnectionIdleTime = 1000*60*10;
-    private Integer maxConnectionLifeTime = 1000*60*25;
+    private Integer maxConnectionIdleTime = 1000*60*20;
+    private Integer maxConnectionLifeTime = 1000*60*60;
     private Integer connectTimeout = 10000;
     private Integer socketTimeout = 0;
     private Boolean socketKeepAlive = false;

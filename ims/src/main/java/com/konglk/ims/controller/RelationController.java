@@ -4,6 +4,9 @@ import com.konglk.ims.service.RelationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import javax.validation.constraints.NotNull;
+import java.util.Map;
+
 /**
  * Created by konglk on 2019/4/23.
  */
@@ -18,7 +21,7 @@ public class RelationController {
         relationService.requestFriend(userId, destId, note);
     }
 
-    @PutMapping("/agreeRequest")
+    @PostMapping("/agreeRequest")
     public void agreeRequest(String userId, String destId) {
         relationService.agreeRequest(userId, destId);
     }

@@ -39,7 +39,8 @@ public class MessageService {
 
     public void insert(MessageDO messageDO) {
         messageDO.setMessageId(UUID.randomUUID().toString());
-        messageDO.setCreateTime(new Date());
+        if(messageDO.getCreateTime() == null)
+            messageDO.setCreateTime(new Date());
         mongoTemplate.insert(messageDO);
     }
 

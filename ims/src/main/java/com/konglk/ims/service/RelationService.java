@@ -58,9 +58,10 @@ public class RelationService {
     同意添加
      */
     public void agreeRequest(String userId, String destId) {
-        updateStatus(userId, destId, 1);
+        updateStatus(destId, userId, 1);
         // 添加朋友
         userService.addFriend(destId, userId, null);
+        userService.addFriend(userId, destId, null);
         logger.info("{} agree friend request of {}", destId, userId);
     }
 
@@ -82,7 +83,7 @@ public class RelationService {
     }
 
     public List<FriendRequestDO> requestList(String userId) {
-        Query query = new Query(Criteria.where("userId").is(userId));
+        Query query = new Query(Criteria.where("destId").is(userId));
         return mongoTemplate.find(query, FriendRequestDO.class);
     }
 
