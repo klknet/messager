@@ -22,6 +22,8 @@ public class MessageService {
 
     @Autowired
     private MongoTemplate mongoTemplate;
+    @Autowired
+    private ConversationService conversationService;
 
     public List<MessageDO> prevMessages(String cid, Date createtime, boolean include) {
         Query query = new Query();
@@ -42,6 +44,10 @@ public class MessageService {
         if(messageDO.getCreateTime() == null)
             messageDO.setCreateTime(new Date());
         mongoTemplate.insert(messageDO);
+        conversationService.updateLastTime(messageDO.getConversationId(), messageDO.getUserId(),
+                messageDO.getCreateTime(), messageDO.getType());
+        conversationService.updateLastTime(messageDO.getConversationId(), messageDO.getDestId(),
+                messageDO.getCreateTime(), messageDO.getType());
     }
 
 

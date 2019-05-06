@@ -16,6 +16,7 @@ import org.springframework.data.domain.Sort.Direction;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -73,5 +74,13 @@ public class ConversationService {
         Query query = new Query(Criteria.where("conversationId").is(conversationId).and("userId").is(userId));
         this.mongoTemplate.remove(query, ConversationDO.class);
         logger.info("delete conversation {} {}", conversationId, userId);
+    }
+
+    public void updateLastTime(String conversationId, String userId, Date date, int type) {
+        Query query = new Query(Criteria.where("conversationId").is(conversationId).and("userId").is(userId));
+        Update update = new Update();
+        update.set("updateTime", date);
+        update.set("type", type);
+        mongoTemplate.updateFirst(query, update, ConversationDO.class);
     }
 }
