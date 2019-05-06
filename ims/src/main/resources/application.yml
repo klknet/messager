@@ -1,7 +1,9 @@
+#host: 39.106.133.40
+host: 192.168.183.100
 spring:
   data:
     mongodb:
-      address: 39.106.133.40:27017
+      address: ${host}:27017
       authentication-database: ims
       username: klk_ims
       password: ims123456
@@ -12,7 +14,7 @@ spring:
       max-connection-per-host: 100
       max-wait-time: 10000
   redis:
-    host: 39.106.133.40
+    host: ${host}
     port: 6379
     password: redis_ims
     lettuce:
@@ -33,4 +35,4 @@ server:
 activemq:
   username: amq_ims
   password: amq_ims_123456
-  url: tcp://39.106.133.40:61616
+  url: tcp://${host}:61616
