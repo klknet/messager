@@ -1,6 +1,6 @@
 package com.konglk.ims.service;
 
-import org.apache.activemq.ActiveMQConnectionFactory;
+import org.apache.activemq.jms.pool.PooledConnectionFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,7 +18,7 @@ public class QueueConsumer {
 
     private Logger logger = LoggerFactory.getLogger(getClass());
     @Resource(name = "amqFactory")
-    private ActiveMQConnectionFactory factory;
+    private PooledConnectionFactory factory;
     @Autowired
     private ChatListenerImpl chatListner;
     @Autowired

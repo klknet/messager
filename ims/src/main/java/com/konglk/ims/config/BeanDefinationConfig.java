@@ -6,6 +6,7 @@ import com.mongodb.MongoClientOptions;
 import com.mongodb.MongoCredential;
 import com.mongodb.ServerAddress;
 import org.apache.activemq.ActiveMQConnectionFactory;
+import org.apache.activemq.jms.pool.PooledConnectionFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -29,8 +30,11 @@ public class BeanDefinationConfig {
     private String url;
 
     @Bean("amqFactory")
-    public ActiveMQConnectionFactory activeMQConnectionFactory() {
-        return new ActiveMQConnectionFactory(username, pwd, url);
+    public PooledConnectionFactory pooledConnectionFactory() {
+        ActiveMQConnectionFactory factory = new ActiveMQConnectionFactory(username, pwd, url);
+        PooledConnectionFactory pooledConnectionFactory = new PooledConnectionFactory();
+        pooledConnectionFactory.setConnectionFactory(factory);
+        return pooledConnectionFactory;
     }
 
     @Bean
