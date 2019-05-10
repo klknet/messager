@@ -10,6 +10,7 @@ import com.konglk.model.Request;
 import com.konglk.model.Response;
 
 import java.io.IOException;
+import java.util.UUID;
 
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -55,6 +56,8 @@ public class MessageHandler {
                     return;
                 if (StringUtils.isNotEmpty(request.getTicket()) && client.isAuth() &&
                         StringUtils.equals(client.getTicket(), request.getTicket())){
+                    //保证消息的幂等性
+                    messageDO.setMessageId(UUID.randomUUID().toString());
                     //消息发送到mq
                     producer.send(request.getData());
                     //消息回复给发送者

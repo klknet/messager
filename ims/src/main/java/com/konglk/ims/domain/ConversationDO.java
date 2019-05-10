@@ -26,6 +26,8 @@ public class ConversationDO {
     private String lastMsg;
     @Field("profile_url")
     private String profileUrl;
+    @Field
+    private int type;
 
     public String getConversationId() {
         return this.conversationId;
@@ -89,5 +91,13 @@ public class ConversationDO {
 
     public void setProfileUrl(String profileUrl) {
         this.profileUrl = profileUrl;
+    }
+
+    public int getType() {
+        return type;
+    }
+
+    public void setType(int type) {
+        this.type = type;
     }
 }

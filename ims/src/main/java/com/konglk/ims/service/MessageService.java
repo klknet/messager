@@ -1,5 +1,6 @@
 package com.konglk.ims.service;
 
+import com.konglk.ims.domain.FailedMessageDO;
 import com.konglk.ims.domain.MessageDO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
@@ -40,7 +41,7 @@ public class MessageService {
     }
 
     public void insert(MessageDO messageDO) {
-        messageDO.setMessageId(UUID.randomUUID().toString());
+
         if(messageDO.getCreateTime() == null)
             messageDO.setCreateTime(new Date());
         mongoTemplate.insert(messageDO);
@@ -48,6 +49,10 @@ public class MessageService {
                 messageDO.getCreateTime(), messageDO.getType());
         conversationService.updateLastTime(messageDO.getConversationId(), messageDO.getDestId(),
                 messageDO.getCreateTime(), messageDO.getType());
+    }
+
+    public void failedMessge(FailedMessageDO msg) {
+        mongoTemplate.insert(msg);
     }
 
 
