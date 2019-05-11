@@ -59,7 +59,7 @@ public class MessageHandler {
                     //保证消息的幂等性
                     messageDO.setMessageId(UUID.randomUUID().toString());
                     //消息发送到mq
-                    producer.send(request.getData());
+                    producer.send(JSON.toJSONString(messageDO));
                     //消息回复给发送者
                     Response resp = new Response();
                     resp.setType(2);

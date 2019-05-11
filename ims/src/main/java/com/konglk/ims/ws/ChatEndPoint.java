@@ -5,6 +5,9 @@ import com.konglk.ims.util.SpringUtils;
 import com.konglk.model.Request;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Scope;
+import org.springframework.stereotype.Component;
 
 import javax.websocket.*;
 import javax.websocket.server.ServerEndpoint;
@@ -26,15 +29,14 @@ public class ChatEndPoint {
 
     public ChatEndPoint() {
         this.nickname = ("client:" + connectionIds.getAndIncrement());
-        messageHandler = SpringUtils.getBean(MessageHandler.class);
-        connectionHolder = SpringUtils.getBean(ConnectionHolder.class);
+        this.messageHandler = SpringUtils.getBeanObj(MessageHandler.class);
+        this.connectionHolder = SpringUtils.getBeanObj(ConnectionHolder.class);
     }
 
     @OnOpen
     public void connect(Session session) {
         logger.info("new connection active {}", this.nickname);
         this.session = session;
-//        ChatClient.addClient(this.nickname, this);
     }
 
     @OnMessage
@@ -87,5 +89,13 @@ public class ChatEndPoint {
 
     public Session getSession() {
         return this.session;
+    }
+
+    public void setMessageHandler(MessageHandler messageHandler) {
+        this.messageHandler = messageHandler;
+    }
+
+    public void setConnectionHolder(ConnectionHolder connectionHolder) {
+        this.connectionHolder = connectionHolder;
     }
 }

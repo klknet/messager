@@ -1,6 +1,8 @@
 package com.konglk.ims.service;
 
-import org.springframework.context.annotation.Profile;
+import com.konglk.ims.cache.Constants;
+import com.konglk.ims.util.SpringUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 /**
@@ -10,19 +12,27 @@ import org.springframework.stereotype.Component;
 public class RandomQueueName {
 
     private int queueNum = 5;
-    private String base = "ims_chat_";
+    private String prdBase = "ims_chat_";
+    private String devBase = "ims_chat_dev_";
+
+    @Autowired
+    private SpringUtils springUtils;
 
     public String getQueueName() {
-        return base + (System.currentTimeMillis() % queueNum);
+        return base() + (System.currentTimeMillis() % queueNum);
     }
 
     public String[] queues() {
         String[] names = new String[queueNum];
         int i = queueNum;
         while (i-- > 0){
-            names[i] = base+i;
+            names[i] = base()+i;
         }
         return names;
+    }
+
+    private String base() {
+        return springUtils.existProfile(Constants.DEV) ? devBase : prdBase;
     }
 
 }

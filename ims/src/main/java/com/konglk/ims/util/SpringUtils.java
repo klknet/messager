@@ -1,6 +1,7 @@
 package com.konglk.ims.util;
 
 import org.springframework.beans.BeansException;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.stereotype.Component;
@@ -11,21 +12,31 @@ import org.springframework.stereotype.Component;
 @Component
 public class SpringUtils implements ApplicationContextAware {
 
-  private static ApplicationContext applicationContext;
+  private ApplicationContext applicationContext;
+  private static ApplicationContext context;
 
   @Override
   public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
-    if(SpringUtils.applicationContext == null) {
-      SpringUtils.applicationContext = applicationContext;
+    if(this.applicationContext == null) {
+      this.applicationContext = applicationContext;
+      context = applicationContext;
     }
   }
 
-  public static Object getBean(String name) {
+  public Object getBean(String name) {
     return applicationContext.getBean(name);
   }
 
-  public static<T> T getBean(Class<T> clazz) {
+  public <T> T getBean(Class<T> clazz) {
     return applicationContext.getBean(clazz);
+  }
+
+  public static <T> T getBeanObj(Class<T> clazz) {
+    return context.getBean(clazz);
+  }
+
+  public boolean existProfile(String profile) {
+    return applicationContext.getEnvironment().acceptsProfiles(profile);
   }
 
 }

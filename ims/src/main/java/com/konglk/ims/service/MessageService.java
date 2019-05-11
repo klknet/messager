@@ -46,9 +46,9 @@ public class MessageService {
             messageDO.setCreateTime(new Date());
         mongoTemplate.insert(messageDO);
         conversationService.updateLastTime(messageDO.getConversationId(), messageDO.getUserId(),
-                messageDO.getCreateTime(), messageDO.getType());
+                messageDO.getCreateTime(), messageDO.getType(), messageDO.getContent());
         conversationService.updateLastTime(messageDO.getConversationId(), messageDO.getDestId(),
-                messageDO.getCreateTime(), messageDO.getType());
+                messageDO.getCreateTime(), messageDO.getType(), messageDO.getContent());
     }
 
     public void failedMessge(FailedMessageDO msg) {

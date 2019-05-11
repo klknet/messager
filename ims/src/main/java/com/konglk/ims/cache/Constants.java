@@ -6,6 +6,8 @@ package com.konglk.ims.cache;
 public class Constants {
 
     protected static final String PREFIX = "ims:" ;
+    public static final String DEV = "dev";
+    public static final String PRD = "prd";
     public static String USER_TICKET = PREFIX+"user:ticket";
 
 }

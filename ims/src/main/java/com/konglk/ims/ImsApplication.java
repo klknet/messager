@@ -1,5 +1,6 @@
 package com.konglk.ims;
 
+import com.konglk.ims.cache.Constants;
 import com.konglk.ims.ws.ChatEndPoint;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -14,8 +15,6 @@ import org.springframework.web.socket.server.standard.ServerEndpointExporter;
 public class ImsApplication
         extends SpringBootServletInitializer {
 
-    private static final String PROFILE = "embedded";
-
     protected SpringApplicationBuilder configure(SpringApplicationBuilder application) {
         return application.sources(new Class[]{ImsApplication.class});
     }
@@ -26,7 +25,7 @@ public class ImsApplication
     }
 
     @Bean
-    @Profile(PROFILE)
+    @Profile(Constants.DEV)
     public static ServerEndpointExporter serverEndpointExporter() {
         ServerEndpointExporter serverEndpointExporter = new ServerEndpointExporter();
         serverEndpointExporter.setAnnotatedEndpointClasses(ChatEndPoint.class);

@@ -76,11 +76,12 @@ public class ConversationService {
         logger.info("delete conversation {} {}", conversationId, userId);
     }
 
-    public void updateLastTime(String conversationId, String userId, Date date, int type) {
+    public void updateLastTime(String conversationId, String userId, Date date, int type, String msg) {
         Query query = new Query(Criteria.where("conversationId").is(conversationId).and("userId").is(userId));
         Update update = new Update();
         update.set("updateTime", date);
         update.set("type", type);
+        update.set("lastMsg", msg);
         mongoTemplate.updateFirst(query, update, ConversationDO.class);
     }
 }
