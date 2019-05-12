@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
 import javax.annotation.Resource;
 import javax.jms.*;
 
@@ -23,6 +24,7 @@ public class QueueConsumer {
     private ChatListenerImpl chatListner;
     @Autowired
     private RandomQueueName randomQueueName;
+    private QueueConnection[] connections;
     private int retryLimit = 10;
 
     @PostConstruct
@@ -31,27 +33,33 @@ public class QueueConsumer {
             start();
         } catch (JMSException e) {
             logger.error(e.getMessage(), e);
-            if(retryLimit-- >= 0) {
-                try {
-                    logger.info("retry connect to active mq for {} times", retryLimit);
-                    start();
-                } catch (JMSException ex) {
-                    logger.error(e.getMessage(), e);
-                }
-            }
         }
     }
 
     private void start() throws JMSException {
+        connections = new QueueConnection[randomQueueName.getQueueNum()];
         String[] names = randomQueueName.queues();
-        for(String name: names) {
-            QueueConnection connection = factory.createQueueConnection();
+        for(int i=0; i<names.length; i++) {
+            QueueConnection connection = connections[i] = factory.createQueueConnection();
             connection.start();
             QueueSession session = connection.createQueueSession(false, Session.AUTO_ACKNOWLEDGE);
-            Queue queue = session.createQueue(name);
+            Queue queue = session.createQueue(names[i]);
             MessageConsumer consumer = session.createConsumer(queue);
             consumer.setMessageListener(chatListner);
-            logger.info("consumer ready for {}", name);
+            logger.info("consumer ready for {}", names[i]);
+        }
+    }
+
+    @PreDestroy
+    public void closeConnection() {
+        if (connections != null) {
+            for (QueueConnection connection: connections) {
+                try {
+                    connection.close();
+                } catch (JMSException e) {
+                    logger.error("failed to release connection {}", connection.toString());
+                }
+            }
         }
     }
 

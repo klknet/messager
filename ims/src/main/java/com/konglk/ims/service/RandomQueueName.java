@@ -35,4 +35,8 @@ public class RandomQueueName {
         return springUtils.existProfile(Constants.DEV) ? devBase : prdBase;
     }
 
+    public int getQueueNum() {
+        return queueNum;
+    }
+
 }
