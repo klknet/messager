@@ -20,7 +20,7 @@ import java.util.List;
  * Created by konglk on 2019/4/20.
  */
 @Configuration
-public class BeanDefinationConfig {
+public class BeanDefinitionConfig {
 
     @Value("${activemq.username}")
     private String username;
@@ -29,7 +29,7 @@ public class BeanDefinationConfig {
     @Value("${activemq.url}")
     private String url;
 
-    @Bean("amqFactory")
+    @Bean(name = "amqFactory", destroyMethod = "stop")
     public PooledConnectionFactory pooledConnectionFactory() {
         ActiveMQConnectionFactory factory = new ActiveMQConnectionFactory(username, pwd, url);
         PooledConnectionFactory pooledConnectionFactory = new PooledConnectionFactory();
@@ -37,8 +37,8 @@ public class BeanDefinationConfig {
         return pooledConnectionFactory;
     }
 
-    @Bean
-    public MongoDbFactory mongoDbFactory(MongoSettingProperties properties) {
+    @Bean(destroyMethod = "destroy")
+    public SimpleMongoDbFactory mongoDbFactory(MongoSettingProperties properties) {
         MongoClientOptions.Builder builder = new MongoClientOptions.Builder();
         builder.connectionsPerHost(properties.getMaxConnectionsPerHost());
         builder.minConnectionsPerHost(properties.getMinConnectionsPerHost());
@@ -89,7 +89,7 @@ public class BeanDefinationConfig {
          MongoClient mongoClient = new MongoClient(serverAddresses, mongoCredential, mongoClientOptions);
 
         // 创建MongoDbFactory
-        MongoDbFactory mongoDbFactory = new SimpleMongoDbFactory(mongoClient, properties.getDatabase());
+        SimpleMongoDbFactory mongoDbFactory = new SimpleMongoDbFactory(mongoClient, properties.getDatabase());
         return mongoDbFactory;
     }
 

@@ -24,5 +24,11 @@ public class Test {
         } catch (Exception e) {
             e.printStackTrace();
         }
+
+        String status = "https://testdevcdn.xylink.com/download100165977_1557732374007.xls";
+        System.out.println(status.lastIndexOf("_"));
+        System.out.println(status.lastIndexOf("."));
+//        String d = status.substring(status.lastIndexOf("_"), status.lastIndexOf("\\."));
+//        System.out.println(d);
     }
 }
