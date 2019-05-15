@@ -17,6 +17,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.BasicQuery;
 import org.springframework.data.mongodb.core.query.Criteria;
@@ -34,6 +35,8 @@ public class UserService {
     private MongoTemplate mongoTemplate;
     @Autowired
     private ConnectionHolder connectionHolder;
+    @Value("${host}")
+    private String host;
 
     public UserDO login(String unique, String pwd) {
         String raw = DecodeUtils.decode(pwd, "konglk");
@@ -68,6 +71,10 @@ public class UserService {
         rawPwd = rawPwd + salt;
         rawPwd = DigestUtils.md5DigestAsHex(rawPwd.getBytes());
         user.setRawPwd(rawPwd);
+        if(StringUtils.isEmpty(user.getProfileUrl())) {
+            user.setProfileUrl("http://"+host+"/static/"+
+                    (user.getGender()==1 ? "default_male.jsp" : "default_female.jsp"));
+        }
         this.mongoTemplate.insert(user);
         this.logger.info("add new user {}", user.getUsername());
     }
