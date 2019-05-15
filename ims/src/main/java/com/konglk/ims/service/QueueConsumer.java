@@ -55,8 +55,8 @@ public class QueueConsumer {
         if (connections != null) {
             for (QueueConnection connection: connections) {
                 try {
+                    System.out.println("close consumer queue"+connections.toString());
                     connection.close();
-                    logger.info("close consumer queue{}", connections.toString());
                 } catch (JMSException e) {
                     logger.error("failed to release connection {}", connection.toString());
                 }

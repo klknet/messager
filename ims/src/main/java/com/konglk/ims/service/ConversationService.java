@@ -78,7 +78,7 @@ public class ConversationService {
 
     public void updateLastTime(String conversationId, String userId, Date date, int type, String msg) {
         Query query = new Query(Criteria.where("conversationId").is(conversationId).and("userId").is(userId)
-                .and("updateTime").gte(date));
+                .and("updateTime").lte(date));
         Update update = new Update();
         update.set("updateTime", date);
         update.set("type", type);
