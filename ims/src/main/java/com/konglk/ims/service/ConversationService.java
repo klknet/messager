@@ -47,10 +47,12 @@ public class ConversationService {
         UserDO userDO = this.mongoTemplate.findOne(new Query()
                 .addCriteria(Criteria.where("userId").is(userId)), UserDO.class);
 
-        for (FriendDO friendDO : userDO.getFriends()) {
-            if (friendDO.getUserId().equals(friend.getUserId())) {
-                conversationDO.setNotename(friendDO.getRemark());
-                break;
+        if(userDO.getFriends() != null) {
+            for (FriendDO friendDO : userDO.getFriends()) {
+                if (friendDO.getUserId().equals(friend.getUserId())) {
+                    conversationDO.setNotename(friendDO.getRemark());
+                    break;
+                }
             }
         }
         conversationDO.setProfileUrl(friend.getProfileUrl());

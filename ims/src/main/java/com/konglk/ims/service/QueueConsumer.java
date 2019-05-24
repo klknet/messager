@@ -24,7 +24,7 @@ public class QueueConsumer {
     private ChatListenerImpl chatListner;
     @Autowired
     private RandomQueueName randomQueueName;
-    private QueueConnection[] connections;
+    private QueueConnection connection;
     private int retryLimit = 10;
 
     @PostConstruct
@@ -37,12 +37,11 @@ public class QueueConsumer {
     }
 
     private void start() throws JMSException {
-        connections = new QueueConnection[randomQueueName.getQueueNum()];
         String[] names = randomQueueName.queues();
+        connection = factory.createQueueConnection();
+        connection.start();
+        QueueSession session = connection.createQueueSession(false, Session.AUTO_ACKNOWLEDGE);
         for(int i=0; i<names.length; i++) {
-            QueueConnection connection = connections[i] = factory.createQueueConnection();
-            connection.start();
-            QueueSession session = connection.createQueueSession(false, Session.AUTO_ACKNOWLEDGE);
             Queue queue = session.createQueue(names[i]);
             MessageConsumer consumer = session.createConsumer(queue);
             consumer.setMessageListener(chatListner);
@@ -52,14 +51,12 @@ public class QueueConsumer {
 
     @PreDestroy
     public void closeConnection() {
-        if (connections != null) {
-            for (QueueConnection connection: connections) {
-                try {
-                    System.out.println("close consumer queue"+connections.toString());
-                    connection.close();
-                } catch (JMSException e) {
-                    logger.error("failed to release connection {}", connection.toString());
-                }
+        if (connection != null) {
+            try {
+                System.out.println("close consumer queue"+connection.toString());
+                connection.close();
+            } catch (JMSException e) {
+                logger.error("failed to release connection {}", connection.toString());
             }
         }
     }

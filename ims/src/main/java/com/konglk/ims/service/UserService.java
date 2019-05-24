@@ -4,13 +4,14 @@ import com.konglk.ims.domain.FriendDO;
 import com.konglk.ims.domain.UserDO;
 import com.konglk.ims.util.DecodeUtils;
 
-import java.util.Date;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
+import com.konglk.ims.util.NameRandomUtil;
 import com.konglk.ims.ws.ConnectionHolder;
 import com.konglk.model.UserPO;
+import com.mongodb.BasicDBObjectBuilder;
+import org.apache.catalina.User;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
 import org.slf4j.Logger;
@@ -18,12 +19,19 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.aggregation.Aggregation;
+import org.springframework.data.mongodb.core.aggregation.TypedAggregation;
 import org.springframework.data.mongodb.core.query.BasicQuery;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 import org.springframework.util.DigestUtils;
 
 @Service
@@ -60,53 +68,79 @@ public class UserService {
     }
 
     public void addUser(UserDO user) {
-        user.setUserId(UUID.randomUUID().toString());
-        String salt = UUID.randomUUID().toString();
-        user.setSalt(salt);
-        Date now = new Date();
-        user.setCreateTime(now);
-        user.setIsLock(0);
-        String rawPwd = user.getRawPwd();
-        rawPwd = DecodeUtils.decode(rawPwd, "konglk");
-        rawPwd = rawPwd + salt;
-        rawPwd = DigestUtils.md5DigestAsHex(rawPwd.getBytes());
-        user.setRawPwd(rawPwd);
-        if(StringUtils.isEmpty(user.getProfileUrl())) {
-            user.setProfileUrl("http://"+host+"/static/"+
-                    (user.getGender()==1 ? "default_male.jsp" : "default_female.jsp"));
-        }
+        populateData(user);
         this.mongoTemplate.insert(user);
         this.logger.info("add new user {}", user.getUsername());
     }
 
+    /*
+    批量添加用户
+     */
+    public void batchInsert(List<UserDO> users) {
+        if (CollectionUtils.isEmpty(users))
+            return;
+        int n = users.size();
+        users.forEach(user -> populateData(user));
+        if (n<=1024){
+            mongoTemplate.insertAll(users);
+        }else {
+            int page = n % 1024 == 0 ? n>>10 : (n>>10) +1;
+            for (int i=0; i<page; i++) {
+                mongoTemplate.insertAll(users.subList(i<<10, Math.min(n, (i<<10) + 1024)));
+            }
+
+        }
+    }
+
     public UserDO addFriend(String userId, String destId, String remark) {
+        if (StringUtils.equals(userId, destId)) {
+            throw new IllegalArgumentException("can't add yourself");
+        }
         Query query = new Query().addCriteria(Criteria.where("userId").is(userId));
-        UserDO friend = (UserDO) this.mongoTemplate.findOne(new Query()
+        UserDO friend = this.mongoTemplate.findOne(new Query()
                 .addCriteria(Criteria.where("userId").is(destId)), UserDO.class);
         if (friend == null) {
             return null;
         }
-        FriendDO f = new FriendDO();
-        f.setUserId(friend.getUserId());
-        f.setProfileUrl(friend.getProfileUrl());
-        f.setGender(friend.getGender());
-        f.setCountry(friend.getCountry());
-        f.setCity(friend.getCity());
-        f.setRemark(StringUtils.isEmpty(remark) ? friend.getNickname() : remark);
-        f.setUsername(friend.getNickname());
-        f.setSignature(friend.getSignature());
-        f.setCreateTime(new Date());
-        f.setLastUpdateTime(new Date());
+        FriendDO f = setFriendInfo(remark, friend);
         Update update = new Update();
-        update.push("friends", f);
+        update.addToSet("friends", f);
         logger.info("add friend {}", f.getUsername());
         return this.mongoTemplate.findAndModify(query, update, UserDO.class);
+    }
+
+
+    /*
+    添加多个朋友
+     */
+    public void batchAddFriend(String userId, List<UserDO> friends) {
+        Query query = new Query().addCriteria(Criteria.where("userId").is(userId));
+        List<FriendDO> friendDOS = friends.stream().map(userDO -> {
+            return setFriendInfo(null, userDO);
+        }).collect(Collectors.toList());
+        Update update = new Update();
+        update.addToSet("friends", BasicDBObjectBuilder.start("$each", friendDOS).get());
+        Random random = new Random();
+        this.mongoTemplate.findAndModify(query, update, UserDO.class);
+    }
+
+
+    public List<UserDO> findUsers(String[] userIds) {
+        return mongoTemplate.find(new Query(Criteria.where("userId").in(userIds)), UserDO.class);
     }
 
     public UserDO findByUserId(String userId) {
         Query query = new Query(Criteria.where("userId").is(userId));
         UserDO userDO = mongoTemplate.findOne(query, UserDO.class);
         return userDO;
+    }
+
+    public List<UserDO> findUserByPage(int page, int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "userId"));
+        Query query = new Query();
+        query.with(pageable);
+        List<UserDO> userDOS = mongoTemplate.find(query, UserDO.class);
+        return userDOS;
     }
 
     /*
@@ -125,5 +159,43 @@ public class UserService {
             BeanUtils.copyProperties(userDO, userPO);
             return userPO;
         }).collect(Collectors.toList());
+    }
+
+    public List<UserDO> randomUser(int n) {
+        TypedAggregation<UserDO> aggregation = Aggregation.newAggregation(UserDO.class, Aggregation.sample(n));
+        return mongoTemplate.aggregate(aggregation, UserDO.class).getMappedResults();
+    }
+
+    private void populateData(UserDO user) {
+        user.setUserId(UUID.randomUUID().toString());
+        String salt = UUID.randomUUID().toString();
+        user.setSalt(salt);
+        Date now = new Date();
+        user.setCreateTime(now);
+        user.setIsLock(0);
+        String rawPwd = user.getRawPwd();
+        rawPwd = DecodeUtils.decode(rawPwd, "konglk");
+        rawPwd = rawPwd + salt;
+        rawPwd = DigestUtils.md5DigestAsHex(rawPwd.getBytes());
+        user.setRawPwd(rawPwd);
+        if(StringUtils.isEmpty(user.getProfileUrl())) {
+            user.setProfileUrl("http://"+host+"/static/"+
+                    (user.getGender()==1 ? "default_male.jpg" : "default_female.jpg"));
+        }
+    }
+
+    private FriendDO setFriendInfo(String remark, UserDO friend) {
+        FriendDO f = new FriendDO();
+        f.setUserId(friend.getUserId());
+        f.setProfileUrl(friend.getProfileUrl());
+        f.setGender(friend.getGender());
+        f.setCountry(friend.getCountry());
+        f.setCity(friend.getCity());
+        f.setRemark(StringUtils.isEmpty(remark) ? friend.getNickname() : remark);
+        f.setUsername(friend.getNickname());
+        f.setSignature(friend.getSignature());
+        f.setCreateTime(new Date());
+        f.setLastUpdateTime(new Date());
+        return f;
     }
 }
