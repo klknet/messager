@@ -37,7 +37,6 @@ public class UserTest {
 
 
 
-    @Test
     public void batchAddFriend() {
         List<UserDO> userDOS = null;
         int page = 0;
@@ -54,40 +53,21 @@ public class UserTest {
                 if (exclude.contains(userDO.getUserId()))
                     continue;
                 System.out.println("add friend "+userDO.getUserId());
-                List<UserDO> friends = userService.randomUser(16);
+                int num = 16;
+                List<UserDO> friends = userService.randomUser(num);
                 friends = friends.stream().filter(u -> !u.getUserId().equals(userDO.getUserId())
                         && !exclude.contains(u.getUserId())).collect(Collectors.toList());
-                userService.batchAddFriend(userDO.getUserId(), friends);
-            }
-
-        }while (!CollectionUtils.isEmpty(userDOS));
-
-    }
-
-    @Test
-    public void buildConversation() {
-        List<UserDO> userDOS = null;
-        int page = 0;
-        do {
-            userDOS = userService.findUserByPage(page, 1024);
-            page += 1;
-            if(CollectionUtils.isEmpty(userDOS)) {
-                break;
-            }
-            List<String> exclude = Arrays.asList("780cc721-c9c8-4d95-a428-cf33a74e5b88",
-                    "1da947b0-03a1-4992-a788-025cb3f70ad1",
-                    "71218737-6acf-47c4-818c-dfebb3cdd79f");
-            for(UserDO userDO: userDOS) {
-                if (exclude.contains(userDO.getUserId()))
-                    continue;
-
-                for (int i=0; i<userDO.getFriends().size(); i += 2) {
-                    FriendDO friend = userDO.getFriends().get(i);
-                    conversationService.buildConversation(userDO.getUserId(), friend.getUserId());
-                    conversationService.buildConversation(friend.getUserId(), userDO.getUserId());
+//                userService.batchAddFriend(userDO.getUserId(), friends);
+                for (int i=0; i<friends.size(); i++) {
+                    userService.addFriend(userDO.getUserId(), friends.get(i).getUserId(), null);
+                    userService.addFriend(friends.get(i).getUserId(), userDO.getUserId(), null);
+                    conversationService.buildConversation(userDO.getUserId(), friends.get(i).getUserId());
+                    conversationService.buildConversation(friends.get(i).getUserId(), userDO.getUserId());
                 }
             }
+
         }while (!CollectionUtils.isEmpty(userDOS));
+
     }
 
     /*
@@ -115,6 +95,7 @@ public class UserTest {
             users.add(userDO);
         }
         userService.batchInsert(users);
+        batchAddFriend();
     }
 
     private String[] genUsername(int n) {
