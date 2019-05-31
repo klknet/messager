@@ -1,5 +1,6 @@
 package com.konglk.ims.controller;
 
+import com.konglk.ims.domain.ConversationDO;
 import com.konglk.ims.service.ConversationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -11,8 +12,8 @@ public class ConversationController {
     private ConversationService conversationService;
 
     @PostMapping({"/build"})
-    public void build(String userId, String destId) {
-        this.conversationService.buildConversation(userId, destId);
+    public ConversationDO build(String userId, String destId) {
+        return this.conversationService.buildConversation(userId, destId);
     }
 
     @GetMapping({"/list"})

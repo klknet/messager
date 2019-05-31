@@ -87,4 +87,5 @@ public class ConversationService {
         update.set("lastMsg", msg);
         mongoTemplate.updateFirst(query, update, ConversationDO.class);
     }
+
 }
