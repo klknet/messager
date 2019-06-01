@@ -3,6 +3,7 @@ package com.konglk.ims.service;
 import org.apache.activemq.jms.pool.PooledConnectionFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -15,7 +16,7 @@ import javax.jms.*;
  * Created by konglk on 2019/4/20.
  */
 @Service
-public class QueueConsumer {
+public class QueueConsumer implements InitializingBean {
 
     private Logger logger = LoggerFactory.getLogger(getClass());
     @Resource(name = "amqFactory")
@@ -25,9 +26,7 @@ public class QueueConsumer {
     @Autowired
     private RandomQueueName randomQueueName;
     private QueueConnection connection;
-    private int retryLimit = 10;
 
-    @PostConstruct
     public void consume() {
         try {
             start();
@@ -40,8 +39,8 @@ public class QueueConsumer {
         String[] names = randomQueueName.queues();
         connection = factory.createQueueConnection();
         connection.start();
-        QueueSession session = connection.createQueueSession(false, Session.AUTO_ACKNOWLEDGE);
         for(int i=0; i<names.length; i++) {
+            QueueSession session = connection.createQueueSession(false, Session.AUTO_ACKNOWLEDGE);
             Queue queue = session.createQueue(names[i]);
             MessageConsumer consumer = session.createConsumer(queue);
             consumer.setMessageListener(chatListner);
@@ -61,4 +60,8 @@ public class QueueConsumer {
         }
     }
 
+    @Override
+    public void afterPropertiesSet() throws Exception {
+        consume();
+    }
 }

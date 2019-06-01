@@ -2,6 +2,7 @@ package com.konglk.ims.service;
 
 import com.konglk.ims.domain.ConversationDO;
 import com.konglk.ims.domain.FriendDO;
+import com.konglk.ims.domain.MessageDO;
 import com.konglk.ims.domain.UserDO;
 
 import java.util.Date;
@@ -26,15 +27,15 @@ public class ConversationService {
 
     @Autowired
     private MongoTemplate mongoTemplate;
+    @Autowired
+    private UserService userService;
 
     public ConversationDO buildConversation(String userId, String destId) {
-        ConversationDO one = this.mongoTemplate.findOne(new Query(new Criteria()
-                .andOperator(new Criteria[]{Criteria.where("userId").is(userId), Criteria.where("destId").is(destId)})), ConversationDO.class);
+        ConversationDO one = this.findByUserIdAndDestId(userId, destId);
         if (one != null) {
             return null;
         }
-        ConversationDO other = this.mongoTemplate.findOne(new Query(new Criteria()
-                .andOperator(new Criteria[]{Criteria.where("userId").is(destId), Criteria.where("destId").is(userId)})), ConversationDO.class);
+        ConversationDO other = this.findByUserIdAndDestId(destId, userId);
         ConversationDO conversationDO = new ConversationDO();
         //如果一方会话已存在，加入到该会话，否则重新建立会话
         if (other != null) {
@@ -42,10 +43,8 @@ public class ConversationService {
         } else {
             conversationDO.setConversationId(UUID.randomUUID().toString());
         }
-        UserDO friend = this.mongoTemplate.findOne(new Query()
-                .addCriteria(Criteria.where("userId").is(destId)), UserDO.class);
-        UserDO userDO = this.mongoTemplate.findOne(new Query()
-                .addCriteria(Criteria.where("userId").is(userId)), UserDO.class);
+        UserDO friend = userService.findByUserId(destId);
+        UserDO userDO = userService.findByUserId(userId);
 
         if(userDO.getFriends() != null) {
             for (FriendDO friendDO : userDO.getFriends()) {
@@ -86,6 +85,50 @@ public class ConversationService {
         update.set("type", type);
         update.set("lastMsg", msg);
         mongoTemplate.updateFirst(query, update, ConversationDO.class);
+    }
+
+    public boolean existConversation(String userId, String destId) {
+        Query query =Query.query(Criteria.where("userId").is(userId).and("destId").is(destId));
+        return mongoTemplate.exists(query, ConversationDO.class);
+    }
+
+    public void joinConversation(String userId, String destId, String conversationId, Date createtime) {
+        ConversationDO conversationDO = new ConversationDO();
+        UserDO friend = userService.findByUserId(destId);
+        UserDO userDO = userService.findByUserId(userId);
+        if(userDO.getFriends() != null) {
+            for (FriendDO friendDO : userDO.getFriends()) {
+                if (friendDO.getUserId().equals(friend.getUserId())) {
+                    conversationDO.setNotename(friendDO.getRemark());
+                    break;
+                }
+            }
+        }
+        conversationDO.setUserId(userId);
+        conversationDO.setDestId(destId);
+        conversationDO.setProfileUrl(friend.getProfileUrl());
+        conversationDO.setConversationId(conversationId);
+        conversationDO.setCreateTime(createtime);
+        conversationDO.setUpdateTime(createtime);
+        mongoTemplate.insert(conversationDO);
+    }
+
+    public ConversationDO findByUserIdAndDestId(String userId, String destId) {
+        ConversationDO conversationDO = this.mongoTemplate.findOne(new Query(new Criteria()
+                .andOperator(new Criteria[]{Criteria.where("userId").is(userId), Criteria.where("destId").is(destId)})), ConversationDO.class);
+        return conversationDO;
+    }
+
+    public void updateConversation(MessageDO messageDO) {
+        // 如果一方没有会话，则创建会话
+        if (! this.existConversation(messageDO.getDestId(), messageDO.getUserId())) {
+            this.joinConversation(messageDO.getDestId(), messageDO.getUserId(),
+                    messageDO.getConversationId(), messageDO.getCreateTime());
+        }
+        this.updateLastTime(messageDO.getConversationId(), messageDO.getUserId(),
+                messageDO.getCreateTime(), messageDO.getType(), messageDO.getContent());
+        this.updateLastTime(messageDO.getConversationId(), messageDO.getDestId(),
+                messageDO.getCreateTime(), messageDO.getType(), messageDO.getContent());
     }
 
 }

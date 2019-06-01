@@ -44,13 +44,7 @@ public class MessageService {
         if(messageDO.getCreateTime() == null) {
             messageDO.setCreateTime(new Date());
         }
-        // 如果一方没有会话，则创建会话
-        conversationService.buildConversation(messageDO.getDestId(), messageDO.getUserId());
         mongoTemplate.insert(messageDO);
-        conversationService.updateLastTime(messageDO.getConversationId(), messageDO.getUserId(),
-                messageDO.getCreateTime(), messageDO.getType(), messageDO.getContent());
-        conversationService.updateLastTime(messageDO.getConversationId(), messageDO.getDestId(),
-                messageDO.getCreateTime(), messageDO.getType(), messageDO.getContent());
     }
 
     public void failedMessge(FailedMessageDO msg) {

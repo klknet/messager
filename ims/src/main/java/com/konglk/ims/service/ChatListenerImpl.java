@@ -28,6 +28,8 @@ public class ChatListenerImpl implements MessageListener {
     @Autowired
     private MessageService messageService;
     @Autowired
+    private ConversationService conversationService;
+    @Autowired
     private ConnectionHolder connectionHolder;
 
     @Override
@@ -40,6 +42,7 @@ public class ChatListenerImpl implements MessageListener {
                 text = textMessage.getText();
                 messageDO = JSON.parseObject(text, MessageDO.class);
                 messageService.insert(messageDO);
+                conversationService.updateConversation(messageDO);
                 String destId = messageDO.getDestId();
                 ChatEndPoint client = connectionHolder.getClient(destId);
                 if(client == null)
