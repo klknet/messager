@@ -8,6 +8,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import com.konglk.ims.util.NameRandomUtil;
+import com.konglk.ims.ws.ChatEndPoint;
 import com.konglk.ims.ws.ConnectionHolder;
 import com.konglk.model.UserPO;
 import com.mongodb.BasicDBObjectBuilder;
@@ -45,6 +46,8 @@ public class UserService {
     private ConnectionHolder connectionHolder;
     @Value("${host}")
     private String host;
+    @Autowired
+    private ReplyService replyService;
 
     public UserDO login(String unique, String pwd) {
         String raw = DecodeUtils.decode(pwd, "konglk");
@@ -58,8 +61,16 @@ public class UserService {
         }
         raw = DigestUtils.md5DigestAsHex((raw + userDO.getSalt()).getBytes());
         if (StringUtils.equals(raw, userDO.getRawPwd())) {
-            //登录凭证
-            String ticket = UUID.randomUUID().toString();
+            String ticket = connectionHolder.getTicket(userDO.getUserId());
+            if(StringUtils.isNotEmpty(ticket)) {
+                ChatEndPoint client = connectionHolder.getClient(userDO.getUserId());
+                if (client != null) {
+                    replyService.replyKickout(client);
+                }
+            }else {
+                //登录凭证
+                ticket = UUID.randomUUID().toString();
+            }
             connectionHolder.addTicket(userDO.getUserId(), ticket);
             userDO.setTicket(ticket);
             return userDO;

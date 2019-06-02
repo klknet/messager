@@ -3,9 +3,10 @@ package com.konglk.ims.ws;
 import com.alibaba.fastjson.JSON;
 import com.konglk.ims.domain.MessageDO;
 import com.konglk.ims.service.ChatProducer;
+import com.konglk.ims.service.ReplyService;
 import com.konglk.ims.service.UserService;
 import com.konglk.model.Authentication;
-import com.konglk.model.ErrorStatus;
+import com.konglk.model.ResponseStatus;
 import com.konglk.model.Request;
 import com.konglk.model.Response;
 
@@ -24,12 +25,14 @@ public class MessageHandler {
     private ChatProducer producer;
     @Autowired
     private ConnectionHolder connectionHolder;
+    @Autowired
+    private ReplyService replyService;
 
     public void process(Request request, ChatEndPoint client)
             throws IOException {
         switch (request.getType()) {
             case 0:
-                client.getSession().getBasicRemote().sendText(JSON.toJSONString(new Response(200, null, "pong", 0)));
+                replyService.replyPong(client);
                 break;
             case 1:
                 Authentication authentication = JSON.parseObject(request.getData(), Authentication.class);
@@ -43,12 +46,10 @@ public class MessageHandler {
                     client.setTicket(ticket);
                     client.setAuth(true);
                     connectionHolder.addClient(authentication.getUserId(), client);
-                    client.getSession().getBasicRemote()
-                            .sendText(JSON.toJSONString(new Response(200, "authentication success", "", 1)));
+                    replyService.replyOK(client);
                 }else {
-                    client.getSession().getBasicRemote().sendText(JSON.toJSONString(new Response(ErrorStatus.TICKET_ERROR, 1)));
+                    replyService.replyTicketError(client);
                 }
-
                 break;
             case 2:
                 MessageDO messageDO = JSON.parseObject(request.getData(), MessageDO.class);
@@ -61,10 +62,8 @@ public class MessageHandler {
                     //消息发送到mq
                     producer.send(JSON.toJSONString(messageDO));
                     //消息回复给发送者
-                    Response resp = new Response();
-                    resp.setType(2);
-                    resp.setData(request.getData());
-                    client.getSession().getBasicRemote().sendText(JSON.toJSONString(resp));
+                    Response resp = new Response(200, "copy", request.getData(), Response.MESSAGE);
+                    replyService.reply(client, resp);
                 }else {
                     client.getSession().close();
                 }

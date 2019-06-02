@@ -5,7 +5,9 @@ package com.konglk.model;
  */
 public class Response {
 
-    public static int TICKET_ERROR = 60001;
+    public static int HEART = 0;
+    public static int AUTH = 1;
+    public static int MESSAGE = 2;
 
     private int code;
     private String message;
@@ -14,9 +16,9 @@ public class Response {
 
     public Response() {}
 
-    public Response(ErrorStatus errorStatus, int type) {
-        this.code = errorStatus.code;
-        this.message = errorStatus.message;
+    public Response(ResponseStatus responseStatus, int type) {
+        this.code = responseStatus.code;
+        this.message = responseStatus.message;
         this.type = type;
     }
 
@@ -25,6 +27,10 @@ public class Response {
         this.message = message;
         this.data = data;
         this.type = type;
+    }
+
+    public static Response of(ResponseStatus responseStatus, int type) {
+        return new Response(responseStatus, type);
     }
 
     public int getCode() {

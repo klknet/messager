@@ -1,18 +1,18 @@
 package com.konglk.model;
 
-import java.lang.reflect.Member;
-
 /**
  * Created by konglk on 2019/4/22.
  */
-public enum  ErrorStatus {
+public enum ResponseStatus {
 
-    TICKET_ERROR(60001, "ticket error");
+    TICKET_ERROR(60001, "ticket error"),
+    KICK_OUT(80001, "kick out"),
+    OK(200, "OK");
 
     int code;
     String message;
 
-    ErrorStatus(int code, String message) {
+    ResponseStatus(int code, String message) {
         this.code = code;
         this.message = message;
     }
