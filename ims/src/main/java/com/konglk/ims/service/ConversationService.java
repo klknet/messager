@@ -31,8 +31,8 @@ public class ConversationService {
     private UserService userService;
 
     public ConversationDO buildConversation(String userId, String destId) {
-        ConversationDO one = this.findByUserIdAndDestId(userId, destId);
-        if (one != null) {
+        if (this.existConversation(userId, destId)) {
+            logger.warn("conversation already exist!");
             return null;
         }
         ConversationDO other = this.findByUserIdAndDestId(destId, userId);
@@ -71,12 +71,18 @@ public class ConversationService {
         return this.mongoTemplate.find(query, ConversationDO.class);
     }
 
+    /*
+    删除会话
+     */
     public void delete(String conversationId, String userId) {
         Query query = new Query(Criteria.where("conversationId").is(conversationId).and("userId").is(userId));
         this.mongoTemplate.remove(query, ConversationDO.class);
         logger.info("delete conversation {} {}", conversationId, userId);
     }
 
+    /*
+    更新会话时间，消息
+     */
     public void updateLastTime(String conversationId, String userId, Date date, int type, String msg) {
         Query query = new Query(Criteria.where("conversationId").is(conversationId).and("userId").is(userId)
                 .and("updateTime").lte(date));
@@ -87,6 +93,9 @@ public class ConversationService {
         mongoTemplate.updateFirst(query, update, ConversationDO.class);
     }
 
+    /*
+    是否存在会话
+     */
     public boolean existConversation(String userId, String destId) {
         Query query =Query.query(Criteria.where("userId").is(userId).and("destId").is(destId));
         return mongoTemplate.exists(query, ConversationDO.class);
@@ -129,6 +138,10 @@ public class ConversationService {
                 messageDO.getCreateTime(), messageDO.getType(), messageDO.getContent());
         this.updateLastTime(messageDO.getConversationId(), messageDO.getDestId(),
                 messageDO.getCreateTime(), messageDO.getType(), messageDO.getContent());
+    }
+
+    public void groupConversation(String userId, List<String> userIds) {
+
     }
 
 }

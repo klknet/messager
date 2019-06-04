@@ -57,6 +57,7 @@ public class ChatEndPoint {
     public void onError(Throwable t)
             throws Throwable {
         logger.error("WebSocket error."+t.getMessage(), t);
+        this.session.close();
     }
 
     public String getUserId() {

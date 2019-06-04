@@ -1,8 +1,12 @@
 package com.konglk.ims.service;
 
+import com.alibaba.fastjson.JSON;
 import com.konglk.ims.domain.FriendDO;
 import com.konglk.ims.domain.FriendRequestDO;
 import com.konglk.ims.domain.UserDO;
+import com.konglk.ims.ws.ConnectionHolder;
+import com.konglk.model.Response;
+import com.konglk.model.ResponseStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,6 +31,10 @@ public class RelationService {
     private MongoTemplate mongoTemplate;
     @Autowired
     private UserService userService;
+    @Autowired
+    private ReplyService replyService;
+    @Autowired
+    private ConnectionHolder connectionHolder;
 
     /*
     请求添加朋友
@@ -52,45 +60,64 @@ public class RelationService {
         requestDO.setUsername(userDO.getUsername());
         mongoTemplate.insert(requestDO);
         logger.info("{} add friend request to {}", userDO.getNickname(), destId);
+        replyService.replyRequestFriend(connectionHolder.getClient(destId), JSON.toJSONString(requestDO));
     }
 
     /**
     同意添加
      */
-    public void agreeRequest(String userId, String destId) {
-        updateStatus(destId, userId, 1);
+    public void agreeRequest(String objectId, String userId) {
+        FriendRequestDO friendRequestDO = mongoTemplate.findById(objectId, FriendRequestDO.class);
+        if(friendRequestDO == null || !friendRequestDO.getDestId().equals(userId))
+            return;
+        updateStatus(objectId, 1);
         // 添加朋友
-        userService.addFriend(destId, userId, null);
-        userService.addFriend(userId, destId, null);
-        logger.info("{} agree friend request of {}", destId, userId);
+        userService.addFriend(friendRequestDO.getUserId(), friendRequestDO.getDestId(), null);
+        userService.addFriend(friendRequestDO.getDestId(), friendRequestDO.getUserId(), null);
+        logger.info("{} agree friend request of {}", friendRequestDO.getDestId(), friendRequestDO.getUserId());
+        //通知客户端刷新朋友列表
+        replyService.replyAgreeFriend(connectionHolder.getClient(friendRequestDO.getUserId()));
     }
 
     /*
     拒绝添加
      */
-    public void refuseRequest(String userId, String destId) {
-        updateStatus(userId, destId, 2);
-        logger.info("{} refuse friend request of {}", destId, userId);
+    public void refuseRequest(String objectId, String userId) {
+        FriendRequestDO friendRequestDO = mongoTemplate.findById(objectId, FriendRequestDO.class);
+        if(friendRequestDO == null || !friendRequestDO.getDestId().equals(userId))
+            return;
+        updateStatus(objectId, 2);
+        logger.info("{} refuse friend request of {}", friendRequestDO.getDestId(), friendRequestDO.getUserId());
     }
 
     /*
     删除请求
      */
-    public void delRequest(String userId, String destId) {
-        Query query = new Query(Criteria.where("destId").is(destId).and("userId").is(userId));
-        mongoTemplate.findAndRemove(query, FriendRequestDO.class);
-        logger.info("{} delete friend request of {}", destId, userId);
+    public void delRequest(String objectId) {
+        FriendRequestDO friendRequestDO = mongoTemplate.findById(objectId, FriendRequestDO.class);
+        if (friendRequestDO == null) {
+            return;
+        }
+        mongoTemplate.remove(Query.query(Criteria.where("_id").is(objectId)));
+        logger.info("{} delete friend request of {}", friendRequestDO.getDestId(), friendRequestDO.getUserId());
     }
 
+    /*
+    好友请求列表
+     */
     public List<FriendRequestDO> requestList(String userId) {
         Query query = new Query(Criteria.where("destId").is(userId));
         return mongoTemplate.find(query, FriendRequestDO.class);
     }
 
-    private void updateStatus(String userId, String destId, int status) {
-        Query query = new Query(Criteria.where("destId").is(destId).and("userId").is(userId));
+    /*
+    更新请求状态
+     */
+    private void updateStatus(String objectId, int status) {
+        Query query = new Query(Criteria.where("_id").is(objectId));
         Update update = new Update();
         update.set("status", status);
         mongoTemplate.findAndModify(query, update, FriendRequestDO.class);
     }
+
 }

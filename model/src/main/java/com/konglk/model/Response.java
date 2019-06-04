@@ -6,7 +6,7 @@ package com.konglk.model;
 public class Response {
 
     public static int HEART = 0;
-    public static int AUTH = 1;
+    public static int USER = 1;
     public static int MESSAGE = 2;
 
     private int code;
@@ -20,6 +20,11 @@ public class Response {
         this.code = responseStatus.code;
         this.message = responseStatus.message;
         this.type = type;
+    }
+
+    public Response(ResponseStatus responseStatus, int type, String data) {
+        this(responseStatus, type);
+        this.data = data;
     }
 
     public Response(int code, String message, String data, int type) {

@@ -35,4 +35,9 @@ public class UserController {
             return null;
         return userService.findUser(username);
     }
+
+    @GetMapping("/findById")
+    public UserDO findById(String userId) {
+        return this.userService.findByUserId(userId);
+    }
 }

@@ -11,6 +11,7 @@ import com.konglk.ims.util.NameRandomUtil;
 import com.konglk.ims.ws.ChatEndPoint;
 import com.konglk.ims.ws.ConnectionHolder;
 import com.konglk.model.UserPO;
+import com.mongodb.BasicDBObject;
 import com.mongodb.BasicDBObjectBuilder;
 import org.apache.catalina.User;
 import org.apache.commons.lang3.StringUtils;
@@ -103,9 +104,16 @@ public class UserService {
         }
     }
 
+    /*
+    添加朋友
+     */
     public UserDO addFriend(String userId, String destId, String remark) {
         if (StringUtils.equals(userId, destId)) {
             throw new IllegalArgumentException("can't add yourself");
+        }
+        if(isFriend(userId, destId)) {
+            logger.warn("{} and {} already friends", userId, destId);
+            return null;
         }
         Query query = new Query().addCriteria(Criteria.where("userId").is(userId));
         UserDO friend = this.mongoTemplate.findOne(new Query()
@@ -118,6 +126,17 @@ public class UserService {
         update.addToSet("friends", f);
         logger.info("add friend {}", f.getUsername());
         return this.mongoTemplate.findAndModify(query, update, UserDO.class);
+    }
+
+    /*
+    删除朋友
+     */
+    public void delFriend(String userId, String friendId) {
+        Query query = Query.query(Criteria.where("userId").is(userId));
+        Update update = new Update();
+        update.pull("friends", new BasicDBObject("userId", friendId));
+        mongoTemplate.updateFirst(query, update, UserDO.class);
+        logger.info("{} delete friend {}", userId, friendId);
     }
 
 
@@ -143,6 +162,7 @@ public class UserService {
     public UserDO findByUserId(String userId) {
         Query query = new Query(Criteria.where("userId").is(userId));
         UserDO userDO = mongoTemplate.findOne(query, UserDO.class);
+        userDO.setTicket(connectionHolder.getTicket(userId));
         return userDO;
     }
 
@@ -158,7 +178,7 @@ public class UserService {
     模糊查询用户信息
      */
     public List<UserPO> findUser(String username) {
-        Document queryObj = new Document("username", new Document("$regex", "^.*" + username + ".*$"));
+        Document queryObj = new Document("username", new Document("$regex", "^" + username + ".*$"));
         Document fieldObj = new Document();
         for(String field: UserPO.fields) {
             fieldObj.put(field, 1);
@@ -172,6 +192,9 @@ public class UserService {
         }).collect(Collectors.toList());
     }
 
+    /*
+    随机获取n个用户
+     */
     public List<UserDO> randomUser(int n) {
         TypedAggregation<UserDO> aggregation = Aggregation.newAggregation(UserDO.class, Aggregation.sample(n));
         return mongoTemplate.aggregate(aggregation, UserDO.class).getMappedResults();
@@ -208,5 +231,14 @@ public class UserService {
         f.setCreateTime(new Date());
         f.setLastUpdateTime(new Date());
         return f;
+    }
+
+    /*
+    是否是好友
+     */
+    public boolean isFriend(String userId, String destId) {
+        Query query = new Query();
+        query.addCriteria(Criteria.where("userId").is(userId).and("friends.userId").is(destId));
+        return mongoTemplate.exists(query, UserDO.class);
     }
 }

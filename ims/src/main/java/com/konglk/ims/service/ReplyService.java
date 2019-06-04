@@ -24,7 +24,7 @@ public class ReplyService {
         try {
             client.getSession().getBasicRemote()
                     .sendText(JSON.toJSONString(response));
-            if (response.getType() == Response.AUTH)
+            if (response.getType() == Response.USER)
                 logger.info("{}-{} reply message - {}", client.getNickname(), client.getUserId(), response.getMessage());
         } catch (IOException e) {
             logger.error("reply error", e.getMessage());
@@ -32,19 +32,38 @@ public class ReplyService {
     }
 
     public void replyOK(ChatEndPoint client) {
-        reply(client, new Response(200, "authentication success", "", Response.AUTH));
+        reply(client, new Response(200, "authentication success", "", Response.USER));
     }
 
+    /*
+    凭证失效
+     */
     public void replyTicketError(ChatEndPoint client) {
-        reply(client, new Response(ResponseStatus.TICKET_ERROR, Response.AUTH));
+        reply(client, new Response(ResponseStatus.TICKET_ERROR, Response.USER));
     }
 
     public void replyPong(ChatEndPoint client) {
         reply(client, new Response(200, null, "pong", Response.HEART));
     }
 
+    /*
+    账号踢出消息
+     */
     public void replyKickout(ChatEndPoint client) {
-        reply(client,new Response(ResponseStatus.KICK_OUT, 1));
+        reply(client,new Response(ResponseStatus.KICK_OUT, Response.USER));
     }
 
+    /*
+    通过好友消息
+     */
+    public void replyAgreeFriend(ChatEndPoint client) {
+        reply(client, new Response(ResponseStatus.AGREE_FRIEND_REQUEST, Response.USER));
+    }
+
+    /*
+    好友请求消息
+     */
+    public void replyRequestFriend(ChatEndPoint client, String data) {
+        reply(client, new Response(ResponseStatus.FRIEND_REQUEST, Response.USER, data));
+    }
 }

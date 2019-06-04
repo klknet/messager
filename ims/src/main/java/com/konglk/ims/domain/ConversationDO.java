@@ -27,7 +27,7 @@ public class ConversationDO {
     @Field("profile_url")
     private String profileUrl;
     @Field
-    private int type;
+    private int type; //0: 一对一 1: 群聊
 
     public String getConversationId() {
         return this.conversationId;

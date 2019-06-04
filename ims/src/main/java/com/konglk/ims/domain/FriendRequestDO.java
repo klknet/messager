@@ -1,5 +1,6 @@
 package com.konglk.ims.domain;
 
+import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
@@ -12,6 +13,8 @@ import java.util.Date;
 @Document(collection="c_friend_request")
 public class FriendRequestDO {
 
+    @Id
+    private String id;
     @Indexed(name = "i_user_id")
     @Field("user_id")
     private String userId;
@@ -75,6 +78,14 @@ public class FriendRequestDO {
 
     public void setUsername(String username) {
         this.username = username;
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
     }
 
     public Date getCreatetime() {
