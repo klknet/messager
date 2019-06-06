@@ -27,6 +27,10 @@ public class ConversationDO {
     @Field("profile_url")
     private String profileUrl;
     @Field
+    private Boolean top;//置顶标识
+    @Field
+    private Boolean dnd; //Don't disturb
+    @Field
     private int type; //0: 一对一 1: 群聊
 
     public String getConversationId() {
@@ -99,5 +103,21 @@ public class ConversationDO {
 
     public void setType(int type) {
         this.type = type;
+    }
+
+    public Boolean getTop() {
+        return top;
+    }
+
+    public void setTop(Boolean top) {
+        this.top = top;
+    }
+
+    public Boolean getDnd() {
+        return dnd;
+    }
+
+    public void setDnd(Boolean dnd) {
+        this.dnd = dnd;
     }
 }

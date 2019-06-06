@@ -65,10 +65,31 @@ public class ConversationService {
         return conversationDO;
     }
 
+    /*
+    获取用户的会话列表
+     */
     public List<ConversationDO> listConversation(String userId) {
         Query query = new Query(Criteria.where("userId").is(userId)).with(Sort.by(Sort.Direction.DESC,
-                new String[]{"updateTime"}));
+               "top", "updateTime"));
         return this.mongoTemplate.find(query, ConversationDO.class);
+    }
+
+    /*
+    消息置顶
+     */
+    public void topConversation(String userId, String conversationId, boolean top) {
+        Query query = new Query(Criteria.where("conversation_id").is(conversationId).and("userId").is(userId));
+        Update update = Update.update("top", top);
+        mongoTemplate.updateFirst(query, update, ConversationDO.class);
+    }
+
+    /*
+    消息免打扰
+     */
+    public void dndConversation(String userId, String conversationId, boolean dnd) {
+        Query query = new Query(Criteria.where("conversation_id").is(conversationId).and("userId").is(userId));
+        Update update = Update.update("dnd", dnd);
+        mongoTemplate.updateFirst(query, update, ConversationDO.class);
     }
 
     /*

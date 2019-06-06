@@ -26,6 +26,16 @@ public class ConversationController {
         conversationService.delete(conversationId, userId);
     }
 
+    @PostMapping("/top")
+    public void top(String conversationId, String userId, boolean top) {
+        conversationService.topConversation(userId, conversationId, top);
+    }
+
+    @PostMapping("/dnd")
+    public void dnd(String conversationId, String userId, boolean dnd) {
+        conversationService.dndConversation(userId, conversationId, dnd);
+    }
+
     @GetMapping("/test")
     public Object test(@RequestParam String id) {
         return "id=" + id + System.currentTimeMillis();
