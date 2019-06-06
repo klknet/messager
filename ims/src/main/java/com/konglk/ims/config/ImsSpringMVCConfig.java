@@ -2,7 +2,6 @@ package com.konglk.ims.config;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.web.servlet.config.annotation.InterceptorRegistration;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
@@ -11,10 +10,12 @@ public class ImsSpringMVCConfig
   implements WebMvcConfigurer
 {
   @Autowired
-  private ValidationHandler validationHandler;
+  private AuthenticationInterceptor authenticationInterceptor;
   
   public void addInterceptors(InterceptorRegistry registry)
   {
-    registry.addInterceptor(this.validationHandler).addPathPatterns(new String[] { "/user/*" });
+    registry.addInterceptor(this.authenticationInterceptor)
+            .addPathPatterns(new String[] { "/user/*" ,"/conversation/*", "/message/*", "/relation/*"})
+            .excludePathPatterns(new String[] {"/user/login"});
   }
 }

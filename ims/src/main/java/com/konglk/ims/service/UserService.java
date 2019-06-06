@@ -7,6 +7,7 @@ import com.konglk.ims.util.DecodeUtils;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import com.konglk.ims.util.EncryptUtil;
 import com.konglk.ims.util.NameRandomUtil;
 import com.konglk.ims.ws.ChatEndPoint;
 import com.konglk.ims.ws.ConnectionHolder;
@@ -51,7 +52,8 @@ public class UserService {
     private ReplyService replyService;
 
     public UserDO login(String unique, String pwd) {
-        String raw = DecodeUtils.decode(pwd, "konglk");
+        String raw = EncryptUtil.decrypt(pwd);
+        logger.info("user {} password is {}", unique, pwd);
         Query query = new Query();
         query.addCriteria(new Criteria().orOperator(Criteria.where("username").is(unique),
                 Criteria.where("cellphone").is(unique),
