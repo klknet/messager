@@ -156,9 +156,20 @@ public class UserService {
         this.mongoTemplate.findAndModify(query, update, UserDO.class);
     }
 
-
+    /*
+    查询所有userIds
+     */
     public List<UserDO> findUsers(String[] userIds) {
         return mongoTemplate.find(new Query(Criteria.where("userId").in(userIds)), UserDO.class);
+    }
+
+    /*
+    是否是好友
+     */
+    public boolean isFriend(String userId, String destId) {
+        Query query = new Query();
+        query.addCriteria(Criteria.where("userId").is(userId).and("friends.userId").is(destId));
+        return mongoTemplate.exists(query, UserDO.class);
     }
 
     public UserDO findByUserId(String userId) {
@@ -168,6 +179,9 @@ public class UserService {
         return userDO;
     }
 
+    /*
+    分页获取用户
+     */
     public List<UserDO> findUserByPage(int page, int size) {
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "userId"));
         Query query = new Query();
@@ -235,12 +249,5 @@ public class UserService {
         return f;
     }
 
-    /*
-    是否是好友
-     */
-    public boolean isFriend(String userId, String destId) {
-        Query query = new Query();
-        query.addCriteria(Criteria.where("userId").is(userId).and("friends.userId").is(destId));
-        return mongoTemplate.exists(query, UserDO.class);
-    }
+
 }

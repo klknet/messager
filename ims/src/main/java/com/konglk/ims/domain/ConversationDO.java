@@ -1,13 +1,17 @@
 package com.konglk.ims.domain;
 
 import java.util.Date;
+import java.util.Objects;
 
+import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
 
 @Document(collection = "c_conversation")
 public class ConversationDO {
+    @Id
+    private String id;
     @Indexed(name = "i_conversation_id")
     @Field("conversation_id")
     private String conversationId;
@@ -28,6 +32,8 @@ public class ConversationDO {
     private String profileUrl;
     @Field
     private Boolean top;//置顶标识
+    @Field
+    private Date topUpdateTime;
     @Field
     private Boolean dnd; //Don't disturb
     @Field
@@ -119,5 +125,34 @@ public class ConversationDO {
 
     public void setDnd(Boolean dnd) {
         this.dnd = dnd;
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
+    }
+
+    public Date getTopUpdateTime() {
+        return topUpdateTime;
+    }
+
+    public void setTopUpdateTime(Date topUpdateTime) {
+        this.topUpdateTime = topUpdateTime;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        ConversationDO that = (ConversationDO) o;
+        return id.equals(that.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id);
     }
 }

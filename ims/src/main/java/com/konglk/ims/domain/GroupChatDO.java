@@ -1,5 +1,6 @@
 package com.konglk.ims.domain;
 
+import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
@@ -13,18 +14,85 @@ import java.util.List;
 @Document(collection = "c_group_chat")
 public class GroupChatDO {
 
-    @Indexed
-    @Field("group_id")
-    private String groupId;
+    @Id
+    private String id;
 
-    @Field("user_ids")
-    private List<String> userIds;
+    private List<Member> members;
+    @Field("show_nickname")
+    private Boolean showNickname;
+    @Field("save_to_ab")
+    private Boolean saveToAB;
 
-    @Field("create_time")
-    private Date createTime;
+    public static class Member {
+        @Field("user_id")
+        private String userId;
+        @Field("profile_url")
+        private String profileUrl;
+        private String nickname;
 
-    @Field("profile_url")
-    private String profileUrl;
+        public Member() {
+        }
 
+        public Member(String userId, String profileUrl, String nickname) {
+            this.userId = userId;
+            this.profileUrl = profileUrl;
+            this.nickname = nickname;
+        }
 
+        public String getUserId() {
+            return userId;
+        }
+
+        public void setUserId(String userId) {
+            this.userId = userId;
+        }
+
+        public String getProfileUrl() {
+            return profileUrl;
+        }
+
+        public void setProfileUrl(String profileUrl) {
+            this.profileUrl = profileUrl;
+        }
+
+        public String getNickname() {
+            return nickname;
+        }
+
+        public void setNickname(String nickname) {
+            this.nickname = nickname;
+        }
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
+    }
+
+    public List<Member> getMembers() {
+        return members;
+    }
+
+    public void setMembers(List<Member> members) {
+        this.members = members;
+    }
+
+    public Boolean getShowNickname() {
+        return showNickname;
+    }
+
+    public void setShowNickname(Boolean showNickname) {
+        this.showNickname = showNickname;
+    }
+
+    public Boolean getSaveToAB() {
+        return saveToAB;
+    }
+
+    public void setSaveToAB(Boolean saveToAB) {
+        this.saveToAB = saveToAB;
+    }
 }

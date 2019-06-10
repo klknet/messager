@@ -13,7 +13,7 @@ public class EncryptUtil {
 
     private static String aesKey = "A1E3K3J3O9E8N6V5";
     private static String iv = "1w2e3r4t5j6i7i9k";
-    private static String ALGORITHM = "AES/ECB/PKCS5Padding";
+    private static String ALGORITHM = "AES/CBC/PKCS5Padding";
 
 
     public static String encrypt(String content) {
@@ -21,7 +21,7 @@ public class EncryptUtil {
             return null;
         try {
             SecretKeySpec skeySpec = new SecretKeySpec(aesKey.getBytes(), "AES");
-            Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
+            Cipher cipher = Cipher.getInstance(ALGORITHM);
             cipher.init(Cipher.ENCRYPT_MODE, skeySpec, new IvParameterSpec(iv.getBytes()));
             byte[] encrypted = cipher.doFinal(content.getBytes());
             return parseByte2HexStr(encrypted);
@@ -38,7 +38,7 @@ public class EncryptUtil {
             return null;
         try {
             SecretKeySpec skeySpec = new SecretKeySpec(aesKey.getBytes(), "AES");
-            Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
+            Cipher cipher = Cipher.getInstance(ALGORITHM);
             cipher.init(Cipher.DECRYPT_MODE, skeySpec, new IvParameterSpec(iv.getBytes()));
             byte[] encrypted1 = parseHexStr2Byte(cipherText);
             byte[] original = cipher.doFinal(encrypted1);

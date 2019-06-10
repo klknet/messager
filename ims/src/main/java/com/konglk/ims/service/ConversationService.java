@@ -1,14 +1,13 @@
 package com.konglk.ims.service;
 
-import com.konglk.ims.domain.ConversationDO;
-import com.konglk.ims.domain.FriendDO;
-import com.konglk.ims.domain.MessageDO;
-import com.konglk.ims.domain.UserDO;
+import com.konglk.ims.comparator.ConversationComparator;
+import com.konglk.ims.domain.*;
 
-import java.util.Date;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
+import java.util.stream.Collectors;
 
+import org.apache.commons.lang3.BooleanUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,6 +18,7 @@ import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 
 @Service
 public class ConversationService {
@@ -30,6 +30,10 @@ public class ConversationService {
     @Autowired
     private UserService userService;
 
+
+    /*
+    创建会话
+     */
     public ConversationDO buildConversation(String userId, String destId) {
         if (this.existConversation(userId, destId)) {
             logger.warn("conversation already exist!");
@@ -70,8 +74,28 @@ public class ConversationService {
      */
     public List<ConversationDO> listConversation(String userId) {
         Query query = new Query(Criteria.where("userId").is(userId)).with(Sort.by(Sort.Direction.DESC,
-               "top", "updateTime"));
-        return this.mongoTemplate.find(query, ConversationDO.class);
+              "updateTime"));
+        List<ConversationDO> convs = this.mongoTemplate.find(query, ConversationDO.class);
+        if(CollectionUtils.isEmpty(convs))
+            return Collections.emptyList();
+        List<ConversationDO> tops = new ArrayList<>();
+        List<ConversationDO> noTops = new ArrayList<>();
+        //置顶回话排在前面
+        for(ConversationDO conv: convs) {
+            if (BooleanUtils.isTrue(conv.getTop()))
+                tops.add(conv);
+            else
+                noTops.add(conv);
+        }
+        if(tops.size() > 0) {
+            //多个置顶按照置顶时间倒排
+            tops.sort(ConversationComparator.compareUpdateTime());
+            List<ConversationDO> result = new ArrayList<>(convs.size());
+            result.addAll(tops);
+            result.addAll(noTops);
+            return result;
+        }
+        return convs;
     }
 
     /*
@@ -80,6 +104,7 @@ public class ConversationService {
     public void topConversation(String userId, String conversationId, boolean top) {
         Query query = new Query(Criteria.where("conversation_id").is(conversationId).and("userId").is(userId));
         Update update = Update.update("top", top);
+        update.set("topUpdateTime", new Date());
         mongoTemplate.updateFirst(query, update, ConversationDO.class);
     }
 
@@ -161,8 +186,35 @@ public class ConversationService {
                 messageDO.getCreateTime(), messageDO.getType(), messageDO.getContent());
     }
 
-    public void groupConversation(String userId, List<String> userIds) {
+    /*
+    群聊
+     */
+    public void groupConversation(String userId, List<String> userIds, String notename) {
+        if(StringUtils.isEmpty(userId) || CollectionUtils.isEmpty(userIds))
+            return;
+        GroupChatDO groupChatDO = new GroupChatDO();
+        List<UserDO> users = userService.findUsers(userIds.toArray(new String[userIds.size()]));
+        List<String> avatars = new ArrayList<>(userIds.size()); //头像
+        List<GroupChatDO.Member> members = users.stream().map(user -> {
+            GroupChatDO.Member member = new GroupChatDO.Member(user.getUserId(),
+                    user.getNickname() == null ? user.getUsername() : user.getNickname(),user.getProfileUrl());
+            avatars.add(user.getProfileUrl());
+            return member;
+        }).collect(Collectors.toList());
+        groupChatDO.setMembers(members);
+        mongoTemplate.insert(groupChatDO);
 
+        ConversationDO conv = new ConversationDO();
+        conv.setUserId(userId);
+        conv.setDestId(groupChatDO.getId());
+        conv.setCreateTime(new Date());
+        conv.setUpdateTime(new Date());
+        conv.setConversationId(UUID.randomUUID().toString());
+        conv.setNotename(notename);
+        conv.setType(1);
+        conv.setProfileUrl("");
+        mongoTemplate.insert(conv);
+        logger.info("build group conversation {} {}", userId, notename);
     }
 
 }

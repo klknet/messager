@@ -1,10 +1,8 @@
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.GregorianCalendar;
-import java.util.Locale;
-import java.util.SimpleTimeZone;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Created by konglk on 2019/4/15.
@@ -30,5 +28,14 @@ public class Test {
         System.out.println(status.lastIndexOf("."));
 //        String d = status.substring(status.lastIndexOf("_"), status.lastIndexOf("\\."));
 //        System.out.println(d);
+
+        List<Integer> list = new ArrayList<>();
+        list.add(1);
+        list.add(2);
+        list.add(3);
+        list.add(4);
+        List<Integer> list2 = list.stream().filter(i -> i < 3).collect(Collectors.toList());
+        System.out.println(list);
+        System.out.println(list2);
     }
 }

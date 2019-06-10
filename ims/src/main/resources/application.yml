@@ -3,6 +3,9 @@ host: 192.168.183.100
 spring:
   profiles:
     active: dev
+  servlet:
+    multipart:
+      location: ${user.dir}
   data:
     mongodb:
       address: ${host}:27017
