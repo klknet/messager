@@ -3,22 +3,32 @@ package com.konglk.ims.service;
 import com.konglk.ims.comparator.ConversationComparator;
 import com.konglk.ims.domain.*;
 
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import com.konglk.ims.util.SudokuGenerator;
+import com.mongodb.BasicDBObject;
+import com.mongodb.DBObject;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.bson.types.ObjectId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
-import org.springframework.data.domain.Sort.Direction;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
+import org.springframework.data.mongodb.gridfs.GridFsTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
+
+import javax.imageio.ImageIO;
 
 @Service
 public class ConversationService {
@@ -29,7 +39,10 @@ public class ConversationService {
     private MongoTemplate mongoTemplate;
     @Autowired
     private UserService userService;
-
+    @Autowired
+    private SudokuGenerator sudokuGenerator;
+    @Autowired
+    private GridFsTemplate gridFsTemplate;
 
     /*
     创建会话
@@ -189,9 +202,9 @@ public class ConversationService {
     /*
     群聊
      */
-    public void groupConversation(String userId, List<String> userIds, String notename) {
+    public ConversationDO groupConversation(String userId, List<String> userIds, String notename) throws IOException {
         if(StringUtils.isEmpty(userId) || CollectionUtils.isEmpty(userIds))
-            return;
+            return null;
         GroupChatDO groupChatDO = new GroupChatDO();
         List<UserDO> users = userService.findUsers(userIds.toArray(new String[userIds.size()]));
         List<String> avatars = new ArrayList<>(userIds.size()); //头像
@@ -212,9 +225,19 @@ public class ConversationService {
         conv.setConversationId(UUID.randomUUID().toString());
         conv.setNotename(notename);
         conv.setType(1);
-        conv.setProfileUrl("");
+        //生成九宫格头像
+        BufferedImage image = sudokuGenerator.clipImages(avatars.toArray(new String[avatars.size()]));
+        //将图片存入gridfs
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        ImageIO.write(image, "JPG", outputStream);
+        ByteArrayInputStream inputStream = new ByteArrayInputStream(outputStream.toByteArray());
+        DBObject metadata = new BasicDBObject();
+        metadata.put("group_id", groupChatDO.getId());
+        ObjectId objectId = gridFsTemplate.store(inputStream, groupChatDO.getId(), "image/jpg", metadata);
+        conv.setProfileUrl(objectId.toString());
         mongoTemplate.insert(conv);
         logger.info("build group conversation {} {}", userId, notename);
+        return conv;
     }
 
 }

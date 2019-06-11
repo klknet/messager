@@ -2,6 +2,7 @@ package com.konglk.ims.util;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
 
 import javax.imageio.ImageIO;
 import java.awt.*;
@@ -17,6 +18,7 @@ import java.net.URL;
  * 生成九宫格头像
  * 群聊头像生成器
  */
+@Component
 public class SudokuGenerator {
 
     private Logger logger = LoggerFactory.getLogger(getClass());

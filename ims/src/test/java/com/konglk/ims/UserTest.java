@@ -36,6 +36,10 @@ public class UserTest {
             "洛阳","杭州","南京","苏州",};
 
 
+    @Test
+    public void test() {
+        System.out.println(userService.findByUserId("780cc721-c9c8-4d95-a428-cf33a74e5b88"));
+    }
 
     public void batchAddFriend() {
         List<UserDO> userDOS = null;

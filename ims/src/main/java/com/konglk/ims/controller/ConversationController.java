@@ -5,6 +5,10 @@ import com.konglk.ims.service.ConversationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
+
 @RestController
 @RequestMapping({"/conversation"})
 public class ConversationController {
@@ -14,6 +18,11 @@ public class ConversationController {
     @PostMapping({"/build"})
     public ConversationDO build(String userId, String destId) {
         return this.conversationService.buildConversation(userId, destId);
+    }
+
+    @PostMapping("/groupChat")
+    public ConversationDO groupChat(String userId, String userIds, String notename) throws IOException {
+        return conversationService.groupConversation(userId, Arrays.asList(userIds.split(",")), notename);
     }
 
     @GetMapping({"/list"})

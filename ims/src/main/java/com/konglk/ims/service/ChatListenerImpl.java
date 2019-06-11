@@ -31,6 +31,8 @@ public class ChatListenerImpl implements MessageListener {
     private ConversationService conversationService;
     @Autowired
     private ConnectionHolder connectionHolder;
+    @Autowired
+    private ReplyService replyService;
 
     @Override
     public void onMessage(Message message) {
@@ -47,11 +49,8 @@ public class ChatListenerImpl implements MessageListener {
                 ChatEndPoint client = connectionHolder.getClient(destId);
                 if(client == null)
                     return;
-                Response resp = new Response();
-                resp.setCode(200);
-                resp.setData(text);
-                resp.setType(2);
-                client.getSession().getBasicRemote().sendText(JSON.toJSONString(resp));
+                replyService.replyMessage(client, text);
+
             }catch(JMSException jms) {
                 logger.error(jms.getMessage(), jms);
             } catch (Exception e) {

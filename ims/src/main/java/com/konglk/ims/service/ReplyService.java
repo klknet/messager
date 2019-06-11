@@ -35,6 +35,10 @@ public class ReplyService {
         reply(client, new Response(200, "authentication success", "", Response.USER));
     }
 
+    public void replyMessage(ChatEndPoint client, String data) {
+        reply(client, new Response(200, "", data, Response.MESSAGE));
+    }
+
     /*
     凭证失效
      */
