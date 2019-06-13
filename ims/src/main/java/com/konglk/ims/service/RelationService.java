@@ -4,7 +4,8 @@ import com.alibaba.fastjson.JSON;
 import com.konglk.ims.domain.FriendDO;
 import com.konglk.ims.domain.FriendRequestDO;
 import com.konglk.ims.domain.UserDO;
-import com.konglk.ims.ws.ConnectionHolder;
+import com.konglk.ims.event.ResponseEvent;
+import com.konglk.ims.util.SpringUtils;
 import com.konglk.model.Response;
 import com.konglk.model.ResponseStatus;
 import org.slf4j.Logger;
@@ -32,9 +33,7 @@ public class RelationService {
     @Autowired
     private UserService userService;
     @Autowired
-    private ReplyService replyService;
-    @Autowired
-    private ConnectionHolder connectionHolder;
+    private SpringUtils springUtils;
 
     /*
     请求添加朋友
@@ -60,7 +59,9 @@ public class RelationService {
         requestDO.setUsername(userDO.getUsername());
         mongoTemplate.insert(requestDO);
         logger.info("{} add friend request to {}", userDO.getNickname(), destId);
-        replyService.replyRequestFriend(connectionHolder.getClient(destId), JSON.toJSONString(requestDO));
+
+        ResponseEvent event = new ResponseEvent(new Response(ResponseStatus.FRIEND_REQUEST, Response.USER, JSON.toJSONString(requestDO)), destId);
+        springUtils.getApplicationContext().publishEvent(event);
     }
 
     /**
@@ -76,7 +77,9 @@ public class RelationService {
         userService.addFriend(friendRequestDO.getDestId(), friendRequestDO.getUserId(), null);
         logger.info("{} agree friend request of {}", friendRequestDO.getDestId(), friendRequestDO.getUserId());
         //通知客户端刷新朋友列表
-        replyService.replyAgreeFriend(connectionHolder.getClient(friendRequestDO.getUserId()));
+        ResponseEvent event = new ResponseEvent(new Response(ResponseStatus.AGREE_FRIEND_REQUEST, Response.USER), friendRequestDO.getUserId());
+        springUtils.getApplicationContext().publishEvent(event);
+
     }
 
     /*

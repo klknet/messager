@@ -4,6 +4,7 @@ import java.util.Date;
 import java.util.Objects;
 
 import org.springframework.data.annotation.Id;
+import org.springframework.data.annotation.Transient;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
@@ -36,8 +37,15 @@ public class ConversationDO {
     private Date topUpdateTime;
     @Field
     private Boolean dnd; //Don't disturb
+    @Field("hide_name")
+    private boolean hideName;// 群聊时隐藏昵称
     @Field
     private int type; //0: 一对一 1: 群聊
+    @Field("message_type")
+    private int messageType; //消息类型
+
+    @Transient
+    private GroupChatDO groupChat;
 
     public String getConversationId() {
         return this.conversationId;
@@ -141,6 +149,30 @@ public class ConversationDO {
 
     public void setTopUpdateTime(Date topUpdateTime) {
         this.topUpdateTime = topUpdateTime;
+    }
+
+    public int getMessageType() {
+        return messageType;
+    }
+
+    public void setMessageType(int messageType) {
+        this.messageType = messageType;
+    }
+
+    public GroupChatDO getGroupChat() {
+        return groupChat;
+    }
+
+    public void setGroupChat(GroupChatDO groupChat) {
+        this.groupChat = groupChat;
+    }
+
+    public boolean isHideName() {
+        return hideName;
+    }
+
+    public void setHideName(boolean hideName) {
+        this.hideName = hideName;
     }
 
     @Override

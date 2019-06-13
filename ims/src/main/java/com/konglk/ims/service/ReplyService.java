@@ -2,8 +2,8 @@ package com.konglk.ims.service;
 
 import com.alibaba.fastjson.JSON;
 import com.konglk.ims.ws.ChatEndPoint;
-import com.konglk.model.ResponseStatus;
 import com.konglk.model.Response;
+import com.konglk.model.ResponseStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -35,10 +35,6 @@ public class ReplyService {
         reply(client, new Response(200, "authentication success", "", Response.USER));
     }
 
-    public void replyMessage(ChatEndPoint client, String data) {
-        reply(client, new Response(200, "", data, Response.MESSAGE));
-    }
-
     /*
     凭证失效
      */
@@ -57,17 +53,4 @@ public class ReplyService {
         reply(client,new Response(ResponseStatus.KICK_OUT, Response.USER));
     }
 
-    /*
-    通过好友消息
-     */
-    public void replyAgreeFriend(ChatEndPoint client) {
-        reply(client, new Response(ResponseStatus.AGREE_FRIEND_REQUEST, Response.USER));
-    }
-
-    /*
-    好友请求消息
-     */
-    public void replyRequestFriend(ChatEndPoint client, String data) {
-        reply(client, new Response(ResponseStatus.FRIEND_REQUEST, Response.USER, data));
-    }
 }

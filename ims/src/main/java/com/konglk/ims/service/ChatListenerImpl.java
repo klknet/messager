@@ -2,15 +2,19 @@ package com.konglk.ims.service;
 
 import com.alibaba.fastjson.JSON;
 import com.konglk.ims.domain.FailedMessageDO;
+import com.konglk.ims.domain.GroupChatDO;
 import com.konglk.ims.domain.MessageDO;
+import com.konglk.ims.event.ResponseEvent;
+import com.konglk.ims.util.SpringUtils;
 import com.konglk.ims.ws.ConnectionHolder;
-import com.konglk.ims.ws.ChatEndPoint;
 import com.konglk.model.Response;
 import org.apache.activemq.command.ActiveMQTextMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 
 import javax.jms.JMSException;
 import javax.jms.Message;
@@ -33,6 +37,10 @@ public class ChatListenerImpl implements MessageListener {
     private ConnectionHolder connectionHolder;
     @Autowired
     private ReplyService replyService;
+    @Autowired
+    private SpringUtils springUtils;
+    @Autowired
+    private ThreadPoolTaskExecutor executor;
 
     @Override
     public void onMessage(Message message) {
@@ -45,12 +53,16 @@ public class ChatListenerImpl implements MessageListener {
                 messageDO = JSON.parseObject(text, MessageDO.class);
                 messageService.insert(messageDO);
                 conversationService.updateConversation(messageDO);
-                String destId = messageDO.getDestId();
-                ChatEndPoint client = connectionHolder.getClient(destId);
-                if(client == null)
-                    return;
-                replyService.replyMessage(client, text);
 
+                final MessageDO m = messageDO;
+                final String t = text;
+                //消息处理事件
+                executor.submit(new Runnable() {
+                    @Override
+                    public void run() {
+                        publishMessageEvent(m, t);
+                    }
+                });
             }catch(JMSException jms) {
                 logger.error(jms.getMessage(), jms);
             } catch (Exception e) {
@@ -61,6 +73,25 @@ public class ChatListenerImpl implements MessageListener {
                     msg.setText(text);
                     msg.setTs(new Date());
                     messageService.failedMessge(msg);
+                }
+            }
+        }
+    }
+
+    public void publishMessageEvent(MessageDO messageDO, String text) {
+        if(messageDO.getChatType() == 0) {
+            // 一对一单聊消息
+            ResponseEvent event = new ResponseEvent(new Response(200, "", text, Response.MESSAGE), messageDO.getUserId());
+            springUtils.getApplicationContext().publishEvent(event);
+            event = new ResponseEvent(new Response(200, "", text, Response.MESSAGE), messageDO.getDestId());
+            springUtils.getApplicationContext().publishEvent(event);
+        } else {
+            //群聊消息
+            GroupChatDO groupChat = conversationService.findGroupChat(messageDO.getDestId());
+            if(groupChat != null && !CollectionUtils.isEmpty(groupChat.getMembers())) {
+                for (GroupChatDO.Member member: groupChat.getMembers()) {
+                    ResponseEvent event = new ResponseEvent(new Response(200, "", text, Response.MESSAGE), member.getUserId());
+                    springUtils.getApplicationContext().publishEvent(event);
                 }
             }
         }

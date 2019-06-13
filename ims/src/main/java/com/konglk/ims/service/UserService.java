@@ -76,10 +76,13 @@ public class UserService {
             }
             connectionHolder.addTicket(userDO.getUserId(), ticket);
             userDO.setTicket(ticket);
+            eraseSensitive(userDO);
             return userDO;
         }
         return null;
     }
+
+
 
     public void addUser(UserDO user) {
         populateData(user);
@@ -247,6 +250,14 @@ public class UserService {
         f.setCreateTime(new Date());
         f.setLastUpdateTime(new Date());
         return f;
+    }
+
+    /*
+    抹掉铭感信息
+     */
+    public void eraseSensitive(UserDO userDO) {
+        userDO.setRawPwd(null);
+        userDO.setSalt(null);
     }
 
 

@@ -14,11 +14,16 @@ import java.io.IOException;
 import java.util.UUID;
 
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
 public class MessageHandler {
+
+    private Logger logger = LoggerFactory.getLogger(getClass());
+
     @Autowired
     private UserService userService;
     @Autowired
@@ -61,10 +66,8 @@ public class MessageHandler {
                     messageDO.setMessageId(UUID.randomUUID().toString());
                     //消息发送到mq
                     producer.send(JSON.toJSONString(messageDO));
-                    //消息回复给发送者
-                    Response resp = new Response(200, "copy", request.getData(), Response.MESSAGE);
-                    replyService.reply(client, resp);
                 }else {
+                    logger.warn("user {} not authenticated", messageDO.getUserId());
                     client.getSession().close();
                 }
                 break;

@@ -18,10 +18,6 @@ public class GroupChatDO {
     private String id;
 
     private List<Member> members;
-    @Field("show_nickname")
-    private Boolean showNickname;
-    @Field("save_to_ab")
-    private Boolean saveToAB;
 
     public static class Member {
         @Field("user_id")
@@ -80,19 +76,5 @@ public class GroupChatDO {
         this.members = members;
     }
 
-    public Boolean getShowNickname() {
-        return showNickname;
-    }
 
-    public void setShowNickname(Boolean showNickname) {
-        this.showNickname = showNickname;
-    }
-
-    public Boolean getSaveToAB() {
-        return saveToAB;
-    }
-
-    public void setSaveToAB(Boolean saveToAB) {
-        this.saveToAB = saveToAB;
-    }
 }

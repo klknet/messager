@@ -39,4 +39,7 @@ public class SpringUtils implements ApplicationContextAware {
     return applicationContext.getEnvironment().acceptsProfiles(profile);
   }
 
+  public ApplicationContext getApplicationContext() {
+    return applicationContext;
+  }
 }

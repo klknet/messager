@@ -23,7 +23,10 @@ public class MessageDO
   @Indexed(name="i_dest_id")
   @Field("dest_id")
   private String destId;
+  @Field
   private int type; //0-文字 1-图片 2-表情 3-语音 4-视频
+  @Field("chat_type")
+  private int chatType; //0- 一对一聊天  1- 群聊
 
   public String getMessageId()
   {
@@ -95,4 +98,11 @@ public class MessageDO
     this.type = type;
   }
 
+  public int getChatType() {
+    return chatType;
+  }
+
+  public void setChatType(int chatType) {
+    this.chatType = chatType;
+  }
 }

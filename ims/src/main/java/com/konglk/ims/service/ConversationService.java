@@ -1,16 +1,12 @@
 package com.konglk.ims.service;
 
+import com.alibaba.fastjson.JSON;
 import com.konglk.ims.comparator.ConversationComparator;
 import com.konglk.ims.domain.*;
-
-import java.awt.image.BufferedImage;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.util.*;
-import java.util.stream.Collectors;
-
+import com.konglk.ims.event.ResponseEvent;
+import com.konglk.ims.util.SpringUtils;
 import com.konglk.ims.util.SudokuGenerator;
+import com.konglk.model.Response;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import org.apache.commons.lang3.BooleanUtils;
@@ -25,10 +21,21 @@ import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.data.mongodb.gridfs.GridFsTemplate;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
+import sun.security.pkcs11.wrapper.Functions;
 
 import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
+import static com.konglk.model.ResponseStatus.GROUP_CHAT;
 
 @Service
 public class ConversationService {
@@ -43,6 +50,8 @@ public class ConversationService {
     private SudokuGenerator sudokuGenerator;
     @Autowired
     private GridFsTemplate gridFsTemplate;
+    @Autowired
+    private SpringUtils springUtils;
 
     /*
     创建会话
@@ -63,7 +72,7 @@ public class ConversationService {
         UserDO friend = userService.findByUserId(destId);
         UserDO userDO = userService.findByUserId(userId);
 
-        if(userDO.getFriends() != null) {
+        if (userDO.getFriends() != null) {
             for (FriendDO friendDO : userDO.getFriends()) {
                 if (friendDO.getUserId().equals(friend.getUserId())) {
                     conversationDO.setNotename(friendDO.getRemark());
@@ -87,20 +96,34 @@ public class ConversationService {
      */
     public List<ConversationDO> listConversation(String userId) {
         Query query = new Query(Criteria.where("userId").is(userId)).with(Sort.by(Sort.Direction.DESC,
-              "updateTime"));
+                "updateTime"));
         List<ConversationDO> convs = this.mongoTemplate.find(query, ConversationDO.class);
-        if(CollectionUtils.isEmpty(convs))
+        if (CollectionUtils.isEmpty(convs))
             return Collections.emptyList();
         List<ConversationDO> tops = new ArrayList<>();
         List<ConversationDO> noTops = new ArrayList<>();
+        List<ConversationDO> groupConvs = new ArrayList<>();
         //置顶回话排在前面
-        for(ConversationDO conv: convs) {
+        for (ConversationDO conv: convs) {
+            if (conv.getType() == 1)
+                groupConvs.add(conv);
             if (BooleanUtils.isTrue(conv.getTop()))
                 tops.add(conv);
             else
                 noTops.add(conv);
         }
-        if(tops.size() > 0) {
+        //设置群聊成员
+        if(groupConvs.size() > 0) {
+            List<String> ids = groupConvs.stream().map(conv -> conv.getDestId()).collect(Collectors.toList());
+            List<GroupChatDO> groupChats = findGroupChat(ids);
+            Map<String, GroupChatDO> map = groupChats.stream().collect(Collectors.toMap(GroupChatDO::getId, Function.identity()));
+            groupConvs.forEach(conv -> {
+                if(map.containsKey(conv.getDestId()))
+                    conv.setGroupChat(map.get(conv.getDestId()));
+            });
+        }
+
+        if (tops.size() > 0) {
             //多个置顶按照置顶时间倒排
             tops.sort(ConversationComparator.compareUpdateTime());
             List<ConversationDO> result = new ArrayList<>(convs.size());
@@ -142,12 +165,11 @@ public class ConversationService {
     /*
     更新会话时间，消息
      */
-    public void updateLastTime(String conversationId, String userId, Date date, int type, String msg) {
-        Query query = new Query(Criteria.where("conversationId").is(conversationId).and("userId").is(userId)
-                .and("updateTime").lte(date));
+    public void updateLastTime(String conversationId, Date date, int type, String msg) {
+        Query query = new Query(Criteria.where("conversationId").is(conversationId).and("updateTime").lte(date));
         Update update = new Update();
         update.set("updateTime", date);
-        update.set("type", type);
+        update.set("messageType", type);
         update.set("lastMsg", msg);
         mongoTemplate.updateFirst(query, update, ConversationDO.class);
     }
@@ -156,15 +178,18 @@ public class ConversationService {
     是否存在会话
      */
     public boolean existConversation(String userId, String destId) {
-        Query query =Query.query(Criteria.where("userId").is(userId).and("destId").is(destId));
+        Query query = Query.query(Criteria.where("userId").is(userId).and("destId").is(destId));
         return mongoTemplate.exists(query, ConversationDO.class);
     }
 
+    /*
+    加入到会议
+     */
     public void joinConversation(String userId, String destId, String conversationId, Date createtime) {
         ConversationDO conversationDO = new ConversationDO();
         UserDO friend = userService.findByUserId(destId);
         UserDO userDO = userService.findByUserId(userId);
-        if(userDO.getFriends() != null) {
+        if (userDO.getFriends() != null) {
             for (FriendDO friendDO : userDO.getFriends()) {
                 if (friendDO.getUserId().equals(friend.getUserId())) {
                     conversationDO.setNotename(friendDO.getRemark());
@@ -187,44 +212,72 @@ public class ConversationService {
         return conversationDO;
     }
 
-    public void updateConversation(MessageDO messageDO) {
-        // 如果一方没有会话，则创建会话
-        if (! this.existConversation(messageDO.getDestId(), messageDO.getUserId())) {
-            this.joinConversation(messageDO.getDestId(), messageDO.getUserId(),
-                    messageDO.getConversationId(), messageDO.getCreateTime());
+    /*
+    查询群聊成员
+     */
+    public GroupChatDO findGroupChat(String id) {
+        if (StringUtils.isEmpty(id))
+            return null;
+        return mongoTemplate.findById(id, GroupChatDO.class);
+    }
+
+    /*
+    查询多个id
+     */
+    public List<GroupChatDO> findGroupChat(List<String> id) {
+        if(CollectionUtils.isEmpty(id))
+            return Collections.emptyList();
+        if(id.size() == 1) {
+            GroupChatDO groupChat = findGroupChat(id.get(0));
+            return groupChat == null ? Collections.emptyList() : Arrays.asList(groupChat);
         }
-        this.updateLastTime(messageDO.getConversationId(), messageDO.getUserId(),
-                messageDO.getCreateTime(), messageDO.getType(), messageDO.getContent());
-        this.updateLastTime(messageDO.getConversationId(), messageDO.getDestId(),
-                messageDO.getCreateTime(), messageDO.getType(), messageDO.getContent());
+        return mongoTemplate.find(Query.query(Criteria.where("_id").in(id)), GroupChatDO.class);
+    }
+
+    public void updateConversation(MessageDO messageDO) {
+        ConversationDO conv = findByUserIdAndDestId(messageDO.getUserId(), messageDO.getDestId());
+        if (conv.getType() == 0) {
+            // 如果一方没有会话，则创建会话
+            if (!this.existConversation(messageDO.getDestId(), messageDO.getUserId())) {
+                this.joinConversation(messageDO.getDestId(), messageDO.getUserId(),
+                        messageDO.getConversationId(), messageDO.getCreateTime());
+            }
+            this.updateLastTime(messageDO.getConversationId(), messageDO.getCreateTime(), messageDO.getType(), messageDO.getContent());
+        } else {
+            updateGroupChat(conv.getDestId(), messageDO.getType(), messageDO.getContent());
+        }
+    }
+
+    /*
+    更新群聊消息
+     */
+    public void updateGroupChat(String destId, int type, String content) {
+        Query query = new Query(Criteria.where("dest_id").is(destId));
+        Update update = new Update();
+        update.set("updateTime", new Date());
+        update.set("messageType", type);
+        update.set("lastMsg", content);
+        mongoTemplate.updateMulti(query, update, ConversationDO.class);
     }
 
     /*
     群聊
      */
-    public ConversationDO groupConversation(String userId, List<String> userIds, String notename) throws IOException {
-        if(StringUtils.isEmpty(userId) || CollectionUtils.isEmpty(userIds))
-            return null;
+    @Async
+    public void groupConversation(String userId, List<String> userIds, String notename) throws IOException {
+        if (StringUtils.isEmpty(userId) || CollectionUtils.isEmpty(userIds))
+            return;
         GroupChatDO groupChatDO = new GroupChatDO();
         List<UserDO> users = userService.findUsers(userIds.toArray(new String[userIds.size()]));
         List<String> avatars = new ArrayList<>(userIds.size()); //头像
         List<GroupChatDO.Member> members = users.stream().map(user -> {
-            GroupChatDO.Member member = new GroupChatDO.Member(user.getUserId(),
-                    user.getNickname() == null ? user.getUsername() : user.getNickname(),user.getProfileUrl());
+            GroupChatDO.Member member = new GroupChatDO.Member(user.getUserId(), user.getProfileUrl(),
+                    user.getNickname() == null ? user.getUsername() : user.getNickname());
             avatars.add(user.getProfileUrl());
             return member;
         }).collect(Collectors.toList());
         groupChatDO.setMembers(members);
         mongoTemplate.insert(groupChatDO);
-
-        ConversationDO conv = new ConversationDO();
-        conv.setUserId(userId);
-        conv.setDestId(groupChatDO.getId());
-        conv.setCreateTime(new Date());
-        conv.setUpdateTime(new Date());
-        conv.setConversationId(UUID.randomUUID().toString());
-        conv.setNotename(notename);
-        conv.setType(1);
         //生成九宫格头像
         BufferedImage image = sudokuGenerator.clipImages(avatars.toArray(new String[avatars.size()]));
         //将图片存入gridfs
@@ -234,10 +287,27 @@ public class ConversationService {
         DBObject metadata = new BasicDBObject();
         metadata.put("group_id", groupChatDO.getId());
         ObjectId objectId = gridFsTemplate.store(inputStream, groupChatDO.getId(), "image/jpg", metadata);
-        conv.setProfileUrl(objectId.toString());
-        mongoTemplate.insert(conv);
-        logger.info("build group conversation {} {}", userId, notename);
-        return conv;
+
+        Date date = new Date();
+        String convId = UUID.randomUUID().toString();
+        for (String uId : userIds) {
+            ConversationDO conv = new ConversationDO();
+            conv.setUserId(uId);
+            conv.setDestId(groupChatDO.getId());
+            conv.setCreateTime(date);
+            conv.setUpdateTime(date);
+            conv.setConversationId(convId);
+            conv.setNotename(notename);
+            conv.setType(1);
+            conv.setProfileUrl(objectId.toString());
+            mongoTemplate.insert(conv);
+            logger.info("build group conversation {} {}", uId, notename);
+            //通知群聊会话已创建
+            Response response = new Response(GROUP_CHAT, Response.USER, JSON.toJSONString(conv));
+            ResponseEvent event = new ResponseEvent(response, uId);
+            springUtils.getApplicationContext().publishEvent(event);
+        }
     }
+
 
 }
