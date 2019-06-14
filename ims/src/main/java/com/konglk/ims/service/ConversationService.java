@@ -171,7 +171,7 @@ public class ConversationService {
         update.set("updateTime", date);
         update.set("messageType", type);
         update.set("lastMsg", msg);
-        mongoTemplate.updateFirst(query, update, ConversationDO.class);
+        mongoTemplate.updateMulti(query, update, ConversationDO.class);
     }
 
     /*

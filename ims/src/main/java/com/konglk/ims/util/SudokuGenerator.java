@@ -34,7 +34,7 @@ public class SudokuGenerator {
         try {
             BufferedImage newImage = new BufferedImage(boardWidth, boardHeight, BufferedImage.TYPE_INT_RGB);
             Graphics2D graphics = newImage.createGraphics();
-            graphics.setBackground(new Color(255, 255, 255));
+            graphics.setBackground(new Color(221, 222, 224));
             graphics.clearRect(0, 0, boardWidth, boardHeight);
             BufferedImage[] profileImgs = new BufferedImage[profileUrls.length];
             int length = profileUrls.length;
