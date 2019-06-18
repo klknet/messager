@@ -60,7 +60,7 @@ public class RelationService {
         mongoTemplate.insert(requestDO);
         logger.info("{} add friend request to {}", userDO.getNickname(), destId);
 
-        ResponseEvent event = new ResponseEvent(new Response(ResponseStatus.FRIEND_REQUEST, Response.USER, JSON.toJSONString(requestDO)), destId);
+        ResponseEvent event = new ResponseEvent(new Response(ResponseStatus.FRIEND_REQUEST, Response.USER), destId);
         springUtils.getApplicationContext().publishEvent(event);
     }
 

@@ -1,5 +1,6 @@
 package com.konglk.ims.service;
 
+import com.konglk.ims.cache.RedisCacheService;
 import com.konglk.ims.domain.FailedMessageDO;
 import com.konglk.ims.domain.MessageDO;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,6 +26,8 @@ public class MessageService {
     private MongoTemplate mongoTemplate;
     @Autowired
     private ConversationService conversationService;
+    @Autowired
+    private RedisCacheService cacheService;
 
     public List<MessageDO> prevMessages(String cid, Date createtime, boolean include) {
         Query query = new Query();

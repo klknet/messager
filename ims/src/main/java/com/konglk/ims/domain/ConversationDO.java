@@ -43,6 +43,8 @@ public class ConversationDO {
     private int type; //0: 一对一 1: 群聊
     @Field("message_type")
     private int messageType; //消息类型
+    @Transient
+    private long unreadCount; //未读消息
 
     @Transient
     private GroupChatDO groupChat;
@@ -173,6 +175,14 @@ public class ConversationDO {
 
     public void setHideName(boolean hideName) {
         this.hideName = hideName;
+    }
+
+    public long getUnreadCount() {
+        return unreadCount;
+    }
+
+    public void setUnreadCount(long unreadCount) {
+        this.unreadCount = unreadCount;
     }
 
     @Override

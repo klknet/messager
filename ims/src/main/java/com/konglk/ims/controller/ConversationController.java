@@ -1,5 +1,6 @@
 package com.konglk.ims.controller;
 
+import com.konglk.ims.cache.RedisCacheService;
 import com.konglk.ims.domain.ConversationDO;
 import com.konglk.ims.domain.GroupChatDO;
 import com.konglk.ims.service.ConversationService;
@@ -20,6 +21,8 @@ public class ConversationController {
 
     @Autowired
     private ConversationService conversationService;
+    @Autowired
+    private RedisCacheService redisCacheService;
 
 
     @PostMapping({"/build"})
@@ -43,6 +46,7 @@ public class ConversationController {
     @DeleteMapping("/delete")
     public void deleteConversation(String conversationId, String userId) {
         conversationService.delete(conversationId, userId);
+        redisCacheService.delUnreadNum(userId, conversationId);
     }
 
     /*

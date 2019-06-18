@@ -1,6 +1,7 @@
 package com.konglk.ims.service;
 
 import com.alibaba.fastjson.JSON;
+import com.konglk.ims.cache.RedisCacheService;
 import com.konglk.ims.comparator.ConversationComparator;
 import com.konglk.ims.domain.*;
 import com.konglk.ims.event.ResponseEvent;
@@ -52,6 +53,8 @@ public class ConversationService {
     private GridFsTemplate gridFsTemplate;
     @Autowired
     private SpringUtils springUtils;
+    @Autowired
+    private RedisCacheService cacheService;
 
     /*
     创建会话
@@ -103,8 +106,10 @@ public class ConversationService {
         List<ConversationDO> tops = new ArrayList<>();
         List<ConversationDO> noTops = new ArrayList<>();
         List<ConversationDO> groupConvs = new ArrayList<>();
+        List<String> ids = new ArrayList<>();
         //置顶回话排在前面
         for (ConversationDO conv: convs) {
+            ids.add(conv.getId());
             if (conv.getType() == 1)
                 groupConvs.add(conv);
             if (BooleanUtils.isTrue(conv.getTop()))
@@ -112,10 +117,17 @@ public class ConversationService {
             else
                 noTops.add(conv);
         }
+        //未读消息
+        Map<String, String> unreadNums = cacheService.getUnreadNum(userId);
+        convs.forEach(conv -> {
+            if (unreadNums.containsKey(conv.getConversationId())) {
+                conv.setUnreadCount(Long.valueOf(unreadNums.get(conv.getConversationId())));
+            }
+        });
         //设置群聊成员
         if(groupConvs.size() > 0) {
-            List<String> ids = groupConvs.stream().map(conv -> conv.getDestId()).collect(Collectors.toList());
-            List<GroupChatDO> groupChats = findGroupChat(ids);
+            List<String> groupIds = groupConvs.stream().map(conv -> conv.getDestId()).collect(Collectors.toList());
+            List<GroupChatDO> groupChats = findGroupChat(groupIds);
             Map<String, GroupChatDO> map = groupChats.stream().collect(Collectors.toMap(GroupChatDO::getId, Function.identity()));
             groupConvs.forEach(conv -> {
                 if(map.containsKey(conv.getDestId()))
@@ -303,7 +315,7 @@ public class ConversationService {
             mongoTemplate.insert(conv);
             logger.info("build group conversation {} {}", uId, notename);
             //通知群聊会话已创建
-            Response response = new Response(GROUP_CHAT, Response.USER, JSON.toJSONString(conv));
+            Response response = new Response(GROUP_CHAT, Response.USER);
             ResponseEvent event = new ResponseEvent(response, uId);
             springUtils.getApplicationContext().publishEvent(event);
         }

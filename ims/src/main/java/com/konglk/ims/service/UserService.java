@@ -227,7 +227,7 @@ public class UserService {
         user.setCreateTime(now);
         user.setIsLock(0);
         String rawPwd = user.getRawPwd();
-        rawPwd = DecodeUtils.decode(rawPwd, "konglk");
+        rawPwd = EncryptUtil.decrypt(rawPwd);
         rawPwd = rawPwd + salt;
         rawPwd = DigestUtils.md5DigestAsHex(rawPwd.getBytes());
         user.setRawPwd(rawPwd);

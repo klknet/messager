@@ -1,6 +1,7 @@
 package com.konglk.ims.service;
 
 import com.alibaba.fastjson.JSON;
+import com.konglk.ims.cache.RedisCacheService;
 import com.konglk.ims.domain.FailedMessageDO;
 import com.konglk.ims.domain.GroupChatDO;
 import com.konglk.ims.domain.MessageDO;
@@ -20,6 +21,8 @@ import javax.jms.JMSException;
 import javax.jms.Message;
 import javax.jms.MessageListener;
 import java.util.Date;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Created by konglk on 2019/4/20.
@@ -34,13 +37,11 @@ public class ChatListenerImpl implements MessageListener {
     @Autowired
     private ConversationService conversationService;
     @Autowired
-    private ConnectionHolder connectionHolder;
-    @Autowired
-    private ReplyService replyService;
-    @Autowired
     private SpringUtils springUtils;
     @Autowired
     private ThreadPoolTaskExecutor executor;
+    @Autowired
+    private RedisCacheService redisCacheService;
 
     @Override
     public void onMessage(Message message) {
@@ -56,6 +57,12 @@ public class ChatListenerImpl implements MessageListener {
 
                 final MessageDO m = messageDO;
                 final String t = text;
+                executor.submit(new Runnable() {
+                    @Override
+                    public void run() {
+                        incrementUnread(m);
+                    }
+                });
                 //消息处理事件
                 executor.submit(new Runnable() {
                     @Override
@@ -74,6 +81,20 @@ public class ChatListenerImpl implements MessageListener {
                     msg.setTs(new Date());
                     messageService.failedMessge(msg);
                 }
+            }
+        }
+    }
+
+    protected void incrementUnread(MessageDO messageDO) {
+        if(messageDO.getChatType() == 0) {
+            redisCacheService.incUnreadNum(messageDO.getDestId(), messageDO.getConversationId(), 1);
+        }else {
+            GroupChatDO groupChat = conversationService.findGroupChat(messageDO.getDestId());
+            if(groupChat != null && !CollectionUtils.isEmpty(groupChat.getMembers())) {
+                List<String> userIds = groupChat.getMembers().stream()
+                        .filter(member -> !member.getUserId().equals(messageDO.getUserId())) //过滤自己
+                        .map(member -> member.getUserId()).collect(Collectors.toList());
+                redisCacheService.incUnreadNum(userIds, messageDO.getConversationId(), 1);
             }
         }
     }

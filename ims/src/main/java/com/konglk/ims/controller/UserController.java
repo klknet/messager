@@ -2,17 +2,21 @@ package com.konglk.ims.controller;
 
 import com.konglk.ims.domain.UserDO;
 import com.konglk.ims.service.UserService;
+import com.konglk.ims.ws.ConnectionHolder;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.constraints.NotNull;
+import java.sql.Connection;
 
 @RestController
 @RequestMapping({"/user"})
 public class UserController {
     @Autowired
     private UserService userService;
+    @Autowired
+    private ConnectionHolder connectionHolder;
 
     @PostMapping({"/add"})
     public void addUser(@RequestBody UserDO userDO) {
@@ -39,5 +43,10 @@ public class UserController {
     @GetMapping("/findById")
     public UserDO findById(String userId) {
         return this.userService.findByUserId(userId);
+    }
+
+    @DeleteMapping("/delTicket")
+    public void delTicket(String userId) {
+        connectionHolder.removeTicket(userId);
     }
 }

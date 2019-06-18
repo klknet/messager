@@ -15,29 +15,30 @@ public class ConnectionHolder {
     @Autowired
     private RedisCacheService cacheService;
 
-    public void addClient(String key, ChatEndPoint chatEndPoint) {
-        clientMap.put(key, chatEndPoint);
+    public void addClient(String userId, ChatEndPoint chatEndPoint) {
+        clientMap.put(userId, chatEndPoint);
     }
 
-    public ChatEndPoint getClient(String key) {
-        return clientMap.get(key);
+    public ChatEndPoint getClient(String userId) {
+        return clientMap.get(userId);
     }
 
-    public void removeClient(String key) {
-        if(StringUtils.isNotEmpty(key))
-            clientMap.remove(key);
+    public void removeClient(String userId) {
+        if(StringUtils.isNotEmpty(userId))
+            clientMap.remove(userId);
     }
 
-    public void addTicket(String key, String ticket) {
+    public void addTicket(String userId, String ticket) {
 //        ticketMap.put(key, ticket);
-        if(StringUtils.isNotEmpty(key))
-            cacheService.setUserTicket(key, ticket);
+        if(StringUtils.isNotEmpty(userId))
+            cacheService.setUserTicket(userId, ticket);
     }
 
-    public String getTicket(String key) {
-        return cacheService.getUserTicket(key);
+    public String getTicket(String userId) {
+        return cacheService.getUserTicket(userId);
     }
 
-    public void removeTicket(String key) {
+    public void removeTicket(String userId) {
+        cacheService.delUserTicket(userId);
     }
 }
