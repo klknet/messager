@@ -11,5 +11,6 @@ public class Constants {
 
     public static String USER_TICKET = PREFIX+"user:ticket";
     public static String CONV_NUMBER = PREFIX+"conv:num";
+    public static String NOT_MODIFIED = PREFIX+"last:modify";
 
 }

@@ -1,5 +1,7 @@
 package com.konglk.ims.cache;
 
+import com.alibaba.fastjson.JSON;
+import com.konglk.ims.model.FileMeta;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,6 +14,7 @@ import org.springframework.stereotype.Service;
 import java.util.Calendar;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -58,6 +61,9 @@ public class RedisCacheService {
 
     }
 
+    /*
+    批量未读消息
+     */
     public void incUnreadNum(List<String> userIds, String id, long delta) {
         redisTemplate.executePipelined(new RedisCallback<Object>() {
             @Override
@@ -87,5 +93,19 @@ public class RedisCacheService {
 
     public void delUnreadNum(String userId, String id) {
         redisTemplate.opsForHash().delete(Constants.CONV_NUMBER+":"+userId, id);
+    }
+
+    /*
+    图片最好修改时间
+     */
+    public void setModifiedTime(String id, String val) {
+       redisTemplate.opsForValue().set(Constants.NOT_MODIFIED+":"+id, val, 7, TimeUnit.DAYS);
+    }
+
+    public FileMeta getModifiedTime(String id) {
+        Object data = redisTemplate.opsForValue().get(Constants.NOT_MODIFIED + ":" + id);
+        if (data == null)
+            return null;
+        return JSON.parseObject(data.toString(), FileMeta.class);
     }
 }
