@@ -9,6 +9,7 @@ import org.springframework.data.redis.core.RedisCallback;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
+import java.util.Calendar;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -47,9 +48,14 @@ public class RedisCacheService {
     未读消息+1
      */
     public void incUnreadNum(String userId, String id, long delta) {
+        String key = Constants.CONV_NUMBER+":"+userId;
         if (delta<=0)
             return;
-        redisTemplate.opsForHash().increment(Constants.CONV_NUMBER+":"+userId, id, delta);
+        redisTemplate.opsForHash().increment(key, id, delta);
+        Long expire = redisTemplate.getExpire(key);
+        if (expire == -1)
+            redisTemplate.expire(key, 30, TimeUnit.DAYS);
+
     }
 
     public void incUnreadNum(List<String> userIds, String id, long delta) {
@@ -57,7 +63,14 @@ public class RedisCacheService {
             @Override
             public Object doInRedis(RedisConnection connection) throws DataAccessException {
                 for (String userId: userIds) {
-                    connection.hIncrBy((Constants.CONV_NUMBER+":"+userId).getBytes(), id.getBytes(), delta);
+                    byte[] key = (Constants.CONV_NUMBER+":"+userId).getBytes();
+                    connection.hIncrBy(key, id.getBytes(), delta);
+                    Long aLong = connection.pTtl(key);
+                    if (aLong == -1) {
+                        Calendar calendar = Calendar.getInstance();
+                        calendar.add(Calendar.DAY_OF_MONTH, 30);
+                        connection.expireAt(key, calendar.getTimeInMillis());
+                    }
                 }
                 return null;
             }
