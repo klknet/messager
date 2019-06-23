@@ -4,15 +4,27 @@ import com.konglk.ims.domain.FriendDO;
 import com.konglk.ims.domain.UserDO;
 import com.konglk.ims.service.ConversationService;
 import com.konglk.ims.service.UserService;
+import com.konglk.ims.util.EncryptUtil;
 import com.konglk.ims.util.NameRandomUtil;
+import com.mongodb.BasicDBObject;
+import com.mongodb.DBObject;
+import com.mongodb.client.MongoCursor;
+import com.mongodb.client.gridfs.GridFSFindIterable;
+import com.mongodb.client.gridfs.model.GridFSFile;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.data.mongodb.gridfs.GridFsTemplate;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.util.CollectionUtils;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -41,6 +53,7 @@ public class UserTest {
         System.out.println(userService.findByUserId("780cc721-c9c8-4d95-a428-cf33a74e5b88"));
     }
 
+    @Test
     public void batchAddFriend() {
         List<UserDO> userDOS = null;
         int page = 0;
@@ -53,16 +66,25 @@ public class UserTest {
             List<String> exclude = Arrays.asList("780cc721-c9c8-4d95-a428-cf33a74e5b88",
                     "1da947b0-03a1-4992-a788-025cb3f70ad1",
                     "71218737-6acf-47c4-818c-dfebb3cdd79f");
+            Random random = new Random();
             for(UserDO userDO: userDOS) {
                 if (exclude.contains(userDO.getUserId()))
                     continue;
                 System.out.println("add friend "+userDO.getUserId());
-                int num = 16;
-                List<UserDO> friends = userService.randomUser(num);
+                int num = 12;
+                List<UserDO> friends = new ArrayList<>();
+                int i=0;
+                while (i<=num) {
+                    UserDO one = userDOS.get(random.nextInt(Integer.MAX_VALUE) % userDOS.size());
+                    if (one.getUserId().equals(userDO.getUserId()))
+                        continue;
+                    friends.add(one);
+                    i++;
+                }
                 friends = friends.stream().filter(u -> !u.getUserId().equals(userDO.getUserId())
                         && !exclude.contains(u.getUserId())).collect(Collectors.toList());
 //                userService.batchAddFriend(userDO.getUserId(), friends);
-                for (int i=0; i<friends.size(); i++) {
+                for (i=0; i<friends.size(); i++) {
                     userService.addFriend(userDO.getUserId(), friends.get(i).getUserId(), null);
                     userService.addFriend(friends.get(i).getUserId(), userDO.getUserId(), null);
                     conversationService.buildConversation(userDO.getUserId(), friends.get(i).getUserId());
@@ -79,12 +101,20 @@ public class UserTest {
      */
     @Test
     public void batchInsert() {
-        int n = 100000;
+        int n = 1024;
         List<UserDO> users = new ArrayList<>();
         String[] username = genUsername(n);
         String[] cellphone = genCellphone(n);
         String[] email = genEmail(n);
         Random random = new Random();
+
+        List<String> profileIds = new ArrayList<>();
+        GridFSFindIterable gridFSFiles = gridFsTemplate.find(new Query());
+        MongoCursor<GridFSFile> iterator = gridFSFiles.iterator();
+        while (iterator.hasNext()) {
+            GridFSFile next = iterator.next();
+            profileIds.add(next.getObjectId().toString());
+        }
         for (int i=0; i<n; i++) {
             UserDO userDO = new UserDO();
             userDO.setUsername(username[i]);
@@ -94,8 +124,9 @@ public class UserTest {
             userDO.setGender(random.nextInt(Integer.MAX_VALUE)&1);
             userDO.setNickname(NameRandomUtil.getRandomJianHan(3+random.nextInt(Integer.MAX_VALUE)%3));
             userDO.setSignature(NameRandomUtil.getRandomJianHan(5+random.nextInt(Integer.MAX_VALUE)%7));
-            userDO.setRawPwd(Base64.getEncoder().encodeToString(("konglk"+username[i]).getBytes()));
+            userDO.setRawPwd(EncryptUtil.encrypt(username[i]));
             userDO.setCity(city[random.nextInt(city.length)]);
+            userDO.setProfileUrl(profileIds.get(random.nextInt(Integer.MAX_VALUE)%profileIds.size()));
             users.add(userDO);
         }
         userService.batchInsert(users);
@@ -154,6 +185,31 @@ public class UserTest {
         }
         System.out.println("emails"+k);
         return emails.toArray(new String[n]);
+    }
+
+    @Autowired
+    private GridFsTemplate gridFsTemplate;
+
+    @Test
+    public void insertImg() throws Exception {
+        String mv = "d:\\美女";
+        String sg = "d:\\帅哥";
+        File file = new File(mv);
+        File[] files = file.listFiles();
+        FileInputStream in;
+        for(File f: files) {
+            in = new FileInputStream(f);
+            gridFsTemplate.store(in, f.getName(), "image/jpg");
+            in.close();
+        }
+        file = new File(sg);
+        files = file.listFiles();
+        for(File f: files) {
+            in = new FileInputStream(f);
+            gridFsTemplate.store(in, f.getName(), "image/jpg");
+            in.close();
+        }
+
     }
 
 }

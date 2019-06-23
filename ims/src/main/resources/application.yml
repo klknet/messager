@@ -9,7 +9,7 @@ spring:
   data:
     mongodb:
       address: ${host}:27017
-      authentication-database: ims
+      authentication-database: admin
       username: klk_ims
       password: ims123456
       auth: true

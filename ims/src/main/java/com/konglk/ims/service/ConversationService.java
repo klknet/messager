@@ -1,6 +1,5 @@
 package com.konglk.ims.service;
 
-import com.alibaba.fastjson.JSON;
 import com.konglk.ims.cache.RedisCacheService;
 import com.konglk.ims.comparator.ConversationComparator;
 import com.konglk.ims.domain.*;
@@ -16,6 +15,7 @@ import org.bson.types.ObjectId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
@@ -25,9 +25,9 @@ import org.springframework.data.mongodb.gridfs.GridFsTemplate;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
-import sun.security.pkcs11.wrapper.Functions;
 
 import javax.imageio.ImageIO;
+import javax.servlet.http.HttpServletRequest;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -55,6 +55,9 @@ public class ConversationService {
     private SpringUtils springUtils;
     @Autowired
     private RedisCacheService cacheService;
+
+    @Value("${host}")
+    String host;
 
     /*
     创建会话
@@ -285,7 +288,11 @@ public class ConversationService {
         List<GroupChatDO.Member> members = users.stream().map(user -> {
             GroupChatDO.Member member = new GroupChatDO.Member(user.getUserId(), user.getProfileUrl(),
                     user.getNickname() == null ? user.getUsername() : user.getNickname());
-            avatars.add(user.getProfileUrl());
+            if (user.getProfileUrl().startsWith("http")) {
+                avatars.add(user.getProfileUrl());
+            }else {
+                avatars.add("http://127.0.0.1/ims/file/img?id="+user.getProfileUrl());
+            }
             return member;
         }).collect(Collectors.toList());
         groupChatDO.setMembers(members);

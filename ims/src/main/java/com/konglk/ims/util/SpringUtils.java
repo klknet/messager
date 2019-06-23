@@ -5,6 +5,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.stereotype.Component;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
+
+import javax.servlet.http.HttpServletRequest;
 
 /**
  * Created by konglk on 2018/8/13.
@@ -41,5 +45,9 @@ public class SpringUtils implements ApplicationContextAware {
 
   public ApplicationContext getApplicationContext() {
     return applicationContext;
+  }
+
+  public static HttpServletRequest getRequest() {
+    return ((ServletRequestAttributes) RequestContextHolder.getRequestAttributes()).getRequest();
   }
 }
