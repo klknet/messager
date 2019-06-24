@@ -7,6 +7,7 @@ import com.konglk.ims.service.ConversationService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
@@ -35,6 +36,7 @@ public class ConversationController {
     创建群聊会话
      */
     @PostMapping("/groupChat")
+    @ResponseStatus(value = HttpStatus.NO_CONTENT)
     public void groupChat(String userId, String userIds, String notename) throws IOException {
          conversationService.groupConversation(userId, Arrays.asList(userIds.split(",")), notename);
     }
@@ -45,6 +47,7 @@ public class ConversationController {
     }
 
     @DeleteMapping("/delete")
+    @ResponseStatus(value = HttpStatus.NO_CONTENT)
     public void deleteConversation(String conversationId, String userId) {
         conversationService.delete(conversationId, userId);
         redisCacheService.delUnreadNum(userId, conversationId);
@@ -54,6 +57,7 @@ public class ConversationController {
     置顶
      */
     @PostMapping("/top")
+    @ResponseStatus(value = HttpStatus.NO_CONTENT)
     public void top(String conversationId, String userId, boolean top) {
         conversationService.topConversation(userId, conversationId, top);
     }
@@ -62,8 +66,10 @@ public class ConversationController {
     消息免打扰
      */
     @PostMapping("/dnd")
+    @ResponseStatus(value = HttpStatus.NO_CONTENT)
     public void dnd(String conversationId, String userId, boolean dnd) {
         conversationService.dndConversation(userId, conversationId, dnd);
+
     }
 
     /*
