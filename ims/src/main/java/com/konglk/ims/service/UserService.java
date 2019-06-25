@@ -51,6 +51,7 @@ public class UserService {
     @Autowired
     private ReplyService replyService;
 
+
     public UserDO login(String unique, String pwd) {
         String raw = EncryptUtil.decrypt(pwd);
         logger.info("user {} password is {}", unique, pwd);
@@ -58,7 +59,7 @@ public class UserService {
         query.addCriteria(new Criteria().orOperator(Criteria.where("username").is(unique),
                 Criteria.where("cellphone").is(unique),
                 Criteria.where("mailbox").is(unique)));
-        UserDO userDO = (UserDO) this.mongoTemplate.findOne(query, UserDO.class);
+        UserDO userDO = mongoTemplate.findOne(query, UserDO.class);
         if (userDO == null) {
             return null;
         }
@@ -70,10 +71,9 @@ public class UserService {
                 if (client != null) {
                     replyService.replyKickout(client);
                 }
-            }else {
-                //登录凭证
-                ticket = UUID.randomUUID().toString();
             }
+            //登录凭证
+            ticket = UUID.randomUUID().toString();
             connectionHolder.addTicket(userDO.getUserId(), ticket);
             userDO.setTicket(ticket);
             eraseSensitive(userDO);
@@ -107,6 +107,17 @@ public class UserService {
             }
 
         }
+    }
+
+    /*
+    修改备注
+     */
+    public void setFriendNotename(String userId, String destId, String notename) {
+        Query query = new Query();
+        query.addCriteria(Criteria.where("user_id").is(userId).and("friends.user_id").is(destId));
+        Update update = new Update();
+        update.set("friends.$.remark", notename);
+        mongoTemplate.updateFirst(query, update, UserDO.class);
     }
 
     /*

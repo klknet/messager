@@ -10,6 +10,7 @@ public enum ResponseStatus {
     AGREE_FRIEND_REQUEST(80002, "agree friend request"),  //同意好友请求
     FRIEND_REQUEST(80003, "friend request"), //好友请求
     GROUP_CHAT(80004, "build group chat"),  //群聊
+    UPDATE_NOTENAME(80005, "update friend notename"), //更新昵称
     OK(200, "OK");
 
     int code;

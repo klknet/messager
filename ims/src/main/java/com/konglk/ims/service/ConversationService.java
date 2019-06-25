@@ -27,7 +27,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
 import javax.imageio.ImageIO;
-import javax.servlet.http.HttpServletRequest;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -195,6 +194,15 @@ public class ConversationService {
     public boolean existConversation(String userId, String destId) {
         Query query = Query.query(Criteria.where("userId").is(userId).and("destId").is(destId));
         return mongoTemplate.exists(query, ConversationDO.class);
+    }
+
+    /*
+    更新会话名称
+     */
+    public void updateConversationName(String userId, String destId, String notename) {
+        Query query = Query.query(Criteria.where("user_id").is(userId).and("dest_id").is(destId));
+        Update update = Update.update("notename", notename);
+        mongoTemplate.updateFirst(query, update, ConversationDO.class);
     }
 
     /*
