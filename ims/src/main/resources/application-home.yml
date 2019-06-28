@@ -1,0 +1,40 @@
+host: 192.168.1.100
+spring:
+  servlet:
+    multipart:
+      location: ${user.dir}
+  data:
+    mongodb:
+      address: ${host}:27017
+      authentication-database: admin
+      username: klk_ims
+      password: ims123456
+      auth: true
+      database: ims
+      authenticationDatabase: ims
+      min-connection-per-host: 10
+      max-connection-per-host: 100
+      max-wait-time: 10000
+  redis:
+    host: ${host}
+    port: 6379
+    password: redis_ims
+    lettuce:
+      pool:
+        max-active: 100
+        max-idle: 10
+        min-idle: 0
+        max-wait: 10000
+    so-timeout: 5000
+
+
+
+server:
+  servlet:
+    context-path: /ims
+  port: 8080
+
+activemq:
+  username: amq_ims
+  password: amq_ims_123456
+  url: tcp://${host}:61616

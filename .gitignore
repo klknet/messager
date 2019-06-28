@@ -6,3 +6,4 @@
 /ims/build/
 /model/out/
 /model/build/
+**/application-dev.yml
