@@ -62,38 +62,17 @@ public class ConversationService {
     创建会话
      */
     public ConversationDO buildConversation(String userId, String destId) {
-        if (this.existConversation(userId, destId)) {
-            logger.warn("conversation already exist!");
-            return null;
-        }
-        ConversationDO other = this.findByUserIdAndDestId(destId, userId);
-        ConversationDO conversationDO = new ConversationDO();
-        //如果一方会话已存在，加入到该会话，否则重新建立会话
-        if (other != null) {
-            conversationDO.setConversationId(other.getConversationId());
-        } else {
-            conversationDO.setConversationId(UUID.randomUUID().toString());
-        }
-        UserDO friend = userService.findByUserId(destId);
-        UserDO userDO = userService.findByUserId(userId);
-
-        if (userDO.getFriends() != null) {
-            for (FriendDO friendDO : userDO.getFriends()) {
-                if (friendDO.getUserId().equals(friend.getUserId())) {
-                    conversationDO.setNotename(friendDO.getRemark());
-                    break;
-                }
-            }
-        }
-        conversationDO.setProfileUrl(friend.getProfileUrl());
-
-        conversationDO.setDestId(destId);
-        conversationDO.setCreateTime(new Date());
-        conversationDO.setUpdateTime(new Date());
-        conversationDO.setUserId(userId);
+        ConversationDO conversationDO = getConversationDO(userId, destId);
+        if (conversationDO == null) return null;
         this.mongoTemplate.insert(conversationDO);
         logger.info("build conversation {} {}", userId, destId);
         return conversationDO;
+    }
+
+    public void batchConversation(String userId, List<String> destIds) {
+        List<ConversationDO> convs = new ArrayList<>(destIds.size());
+        convs = destIds.stream().map(id -> getConversationDO(userId, id)).collect(Collectors.toList());
+        mongoTemplate.insertAll(convs);
     }
 
     /*
@@ -334,6 +313,43 @@ public class ConversationService {
             ResponseEvent event = new ResponseEvent(response, uId);
             springUtils.getApplicationContext().publishEvent(event);
         }
+    }
+
+    private ConversationDO getConversationDO(String userId, String destId) {
+        if (this.existConversation(userId, destId)) {
+            logger.warn("conversation already exist!");
+            return null;
+        }
+        ConversationDO other = this.findByUserIdAndDestId(destId, userId);
+        ConversationDO conversationDO = new ConversationDO();
+        //如果一方会话已存在，加入到该会话，否则重新建立会话
+        if (other != null) {
+            conversationDO.setConversationId(other.getConversationId());
+        } else {
+            conversationDO.setConversationId(UUID.randomUUID().toString());
+        }
+        UserDO friend = userService.findByUserId(destId);
+        UserDO userDO = userService.findByUserId(userId);
+
+        if(friend == null || userDO == null) {
+            throw new IllegalArgumentException();
+        }
+
+        if (userDO.getFriends() != null) {
+            for (FriendDO friendDO : userDO.getFriends()) {
+                if (friendDO.getUserId().equals(friend.getUserId())) {
+                    conversationDO.setNotename(friendDO.getRemark());
+                    break;
+                }
+            }
+        }
+        conversationDO.setProfileUrl(friend.getProfileUrl());
+
+        conversationDO.setDestId(destId);
+        conversationDO.setCreateTime(new Date());
+        conversationDO.setUpdateTime(new Date());
+        conversationDO.setUserId(userId);
+        return conversationDO;
     }
 
 

@@ -1,13 +1,10 @@
 package com.konglk.ims;
 
-import com.konglk.ims.domain.FriendDO;
 import com.konglk.ims.domain.UserDO;
 import com.konglk.ims.service.ConversationService;
 import com.konglk.ims.service.UserService;
 import com.konglk.ims.util.EncryptUtil;
 import com.konglk.ims.util.NameRandomUtil;
-import com.mongodb.BasicDBObject;
-import com.mongodb.DBObject;
 import com.mongodb.client.MongoCursor;
 import com.mongodb.client.gridfs.GridFSFindIterable;
 import com.mongodb.client.gridfs.model.GridFSFile;
@@ -15,16 +12,13 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.gridfs.GridFsTemplate;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.util.CollectionUtils;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -32,8 +26,7 @@ import java.util.stream.Collectors;
  * Created by konglk on 2019/5/23.
  */
 @RunWith(SpringJUnit4ClassRunner.class)
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK)
-@ActiveProfiles("test")
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 public class UserTest {
 
     @Autowired
@@ -53,7 +46,6 @@ public class UserTest {
         System.out.println(userService.findByUserId("780cc721-c9c8-4d95-a428-cf33a74e5b88"));
     }
 
-    @Test
     public void batchAddFriend() {
         List<UserDO> userDOS = null;
         int page = 0;
@@ -66,29 +58,18 @@ public class UserTest {
             List<String> exclude = Arrays.asList("780cc721-c9c8-4d95-a428-cf33a74e5b88",
                     "1da947b0-03a1-4992-a788-025cb3f70ad1",
                     "71218737-6acf-47c4-818c-dfebb3cdd79f");
-            Random random = new Random();
-            for(UserDO userDO: userDOS) {
-                if (exclude.contains(userDO.getUserId()))
-                    continue;
-                System.out.println("add friend "+userDO.getUserId());
-                int num = 12;
-                List<UserDO> friends = new ArrayList<>();
-                int i=0;
-                while (i<=num) {
-                    UserDO one = userDOS.get(random.nextInt(Integer.MAX_VALUE) % userDOS.size());
-                    if (one.getUserId().equals(userDO.getUserId()))
+            for(int i=0; i<userDOS.size(); i+=12) {
+                int j=i+12;
+                j = Math.min(j, userDOS.size());
+                for (int k=i; k<j; k++) {
+                    UserDO userDO = userDOS.get(k);
+                    if (exclude.contains(userDO.getUserId()))
                         continue;
-                    friends.add(one);
-                    i++;
-                }
-                friends = friends.stream().filter(u -> !u.getUserId().equals(userDO.getUserId())
-                        && !exclude.contains(u.getUserId())).collect(Collectors.toList());
-//                userService.batchAddFriend(userDO.getUserId(), friends);
-                for (i=0; i<friends.size(); i++) {
-                    userService.addFriend(userDO.getUserId(), friends.get(i).getUserId(), null);
-                    userService.addFriend(friends.get(i).getUserId(), userDO.getUserId(), null);
-                    conversationService.buildConversation(userDO.getUserId(), friends.get(i).getUserId());
-                    conversationService.buildConversation(friends.get(i).getUserId(), userDO.getUserId());
+                    List<UserDO> friends = userDOS.subList(k+1, j);
+                    if(CollectionUtils.isEmpty(friends))
+                        continue;
+                    userService.batchAddFriend(userDO.getUserId(), friends);
+                    conversationService.batchConversation(userDO.getUserId(), friends.stream().map(obj -> obj.getUserId()).collect(Collectors.toList()));
                 }
             }
 
@@ -101,7 +82,7 @@ public class UserTest {
      */
     @Test
     public void batchInsert() {
-        int n = 1024;
+        int n = 256;
         List<UserDO> users = new ArrayList<>();
         String[] username = genUsername(n);
         String[] cellphone = genCellphone(n);
