@@ -5,10 +5,8 @@ import com.konglk.ims.cache.RedisCacheService;
 import com.konglk.ims.domain.FailedMessageDO;
 import com.konglk.ims.domain.GroupChatDO;
 import com.konglk.ims.domain.MessageDO;
-import com.konglk.ims.event.ResponseEvent;
-import com.konglk.ims.util.SpringUtils;
-import com.konglk.ims.ws.ConnectionHolder;
 import com.konglk.model.Response;
+import com.konglk.model.ResponseStatus;
 import org.apache.activemq.command.ActiveMQTextMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,8 +35,6 @@ public class ChatListenerImpl implements MessageListener {
     @Autowired
     private ConversationService conversationService;
     @Autowired
-    private SpringUtils springUtils;
-    @Autowired
     private ThreadPoolTaskExecutor executor;
     @Autowired
     private RedisCacheService redisCacheService;
@@ -57,19 +53,10 @@ public class ChatListenerImpl implements MessageListener {
 
                 final MessageDO m = messageDO;
                 final String t = text;
-                executor.submit(new Runnable() {
-                    @Override
-                    public void run() {
-                        incrementUnread(m);
-                    }
-                });
+                //未读消息+1
+                executor.submit(()->incrementUnread(m));
                 //消息处理事件
-                executor.submit(new Runnable() {
-                    @Override
-                    public void run() {
-                        publishMessageEvent(m, t);
-                    }
-                });
+                executor.submit(()->messageService.notify(m, new Response(ResponseStatus.TRANSFER_MESSAGE, Response.MESSAGE)));
             }catch(JMSException jms) {
                 logger.error(jms.getMessage(), jms);
             } catch (Exception e) {
@@ -99,23 +86,5 @@ public class ChatListenerImpl implements MessageListener {
         }
     }
 
-    public void publishMessageEvent(MessageDO messageDO, String text) {
-        if(messageDO.getChatType() == 0) {
-            // 一对一单聊消息
-            ResponseEvent event = new ResponseEvent(new Response(200, "", text, Response.MESSAGE), messageDO.getUserId());
-            springUtils.getApplicationContext().publishEvent(event);
-            event = new ResponseEvent(new Response(200, "", text, Response.MESSAGE), messageDO.getDestId());
-            springUtils.getApplicationContext().publishEvent(event);
-        } else {
-            //群聊消息
-            GroupChatDO groupChat = conversationService.findGroupChat(messageDO.getDestId());
-            if(groupChat != null && !CollectionUtils.isEmpty(groupChat.getMembers())) {
-                for (GroupChatDO.Member member: groupChat.getMembers()) {
-                    ResponseEvent event = new ResponseEvent(new Response(200, "", text, Response.MESSAGE), member.getUserId());
-                    springUtils.getApplicationContext().publishEvent(event);
-                }
-            }
-        }
-    }
 
 }

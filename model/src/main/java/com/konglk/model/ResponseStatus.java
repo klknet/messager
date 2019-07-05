@@ -11,6 +11,8 @@ public enum ResponseStatus {
     FRIEND_REQUEST(80003, "friend request"), //好友请求
     GROUP_CHAT(80004, "build group chat"),  //群聊
     UPDATE_NOTENAME(80005, "update friend notename"), //更新昵称
+    TRANSFER_MESSAGE(70001, "message transfer"), //转发消息
+    REVOCATION(70002, "message revocation"), //撤回消息
     OK(200, "OK");
 
     int code;

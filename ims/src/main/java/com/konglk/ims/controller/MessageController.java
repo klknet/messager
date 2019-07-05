@@ -22,9 +22,20 @@ public class MessageController {
     @Autowired
     private RedisCacheService redisCacheService;
 
+    /*
+    取晚于createtime后消息
+     */
     @GetMapping("/prev")
     public Object prev(String cid, String createtime, boolean include) throws ParseException {
         return messageService.prevMessages(cid, new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSX").parse(createtime), include);
+    }
+
+    /*
+    撤回消息，2分钟以内的消息可撤回
+     */
+    @PutMapping("/revocation")
+    public void revocation(String userId, String msgId) {
+        messageService.revocation(userId, msgId);
     }
 
     @DeleteMapping("/delUnread")

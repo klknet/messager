@@ -1,30 +1,30 @@
 package com.konglk.ims.domain;
 
 import java.util.Date;
+
+import org.springframework.data.mongodb.core.index.CompoundIndex;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
 
 @Document(collection="c_message")
+@CompoundIndex(def="{'conversation_id':1, 'create_time':-1}")
 public class MessageDO
 {
-  @Field("meessage_id")
+  @Field("message_id")
   @Indexed(unique=true, name="i_message_id")
   private String messageId;
   @Field("conversation_id")
   private String conversationId;
   @Field("create_time")
-  @Indexed(name="i_createtime")
   private Date createTime;
   private String content;
-  @Indexed(name="i_user_id")
   @Field("user_id")
   private String userId;
-  @Indexed(name="i_dest_id")
   @Field("dest_id")
   private String destId;
   @Field
-  private int type; //0-文字 1-图片 2-表情 3-语音 4-视频
+  private int type; //0-文字 1-图片 2-表情 3-语音 4-视频 5-撤回 -1-删除
   @Field("chat_type")
   private int chatType; //0- 一对一聊天  1- 群聊
 
