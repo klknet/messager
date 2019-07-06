@@ -159,13 +159,20 @@ public class ConversationService {
     更新会话时间，消息
      */
     public void updateLastTime(String conversationId, Date date, int type, String msg) {
-        Query query = new Query(Criteria.where("conversationId").is(conversationId).and("updateTime").lte(date));
+        //会话最后更新时间要晚于消息发送时间
+        Criteria criteria = Criteria.where("conversationId").is(conversationId);
+        Query query = new Query(criteria);
         Update update = new Update();
-        update.set("updateTime", date);
+        if(date != null) {
+            criteria.and("updateTime").lte(date);
+            update.set("updateTime", date);
+        }
         update.set("messageType", type);
-        update.set("lastMsg", msg);
+        if(StringUtils.isNotEmpty(msg))
+            update.set("lastMsg", msg);
         mongoTemplate.updateMulti(query, update, ConversationDO.class);
     }
+
 
     /*
     是否存在会话

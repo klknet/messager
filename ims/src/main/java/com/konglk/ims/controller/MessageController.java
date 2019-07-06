@@ -3,6 +3,7 @@ package com.konglk.ims.controller;
 import com.konglk.ims.cache.RedisCacheService;
 import com.konglk.ims.service.MessageService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 import java.text.DateFormat;
@@ -33,11 +34,13 @@ public class MessageController {
     /*
     撤回消息，2分钟以内的消息可撤回
      */
+    @ResponseStatus(HttpStatus.NO_CONTENT)
     @PutMapping("/revocation")
     public void revocation(String userId, String msgId) {
         messageService.revocation(userId, msgId);
     }
 
+    @ResponseStatus(HttpStatus.NO_CONTENT)
     @DeleteMapping("/delUnread")
     public void delUnread(String userId, String id) {
         redisCacheService.delUnreadNum(userId, id);

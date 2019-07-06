@@ -5,10 +5,12 @@ import com.konglk.ims.cache.RedisCacheService;
 import com.konglk.ims.domain.FailedMessageDO;
 import com.konglk.ims.domain.GroupChatDO;
 import com.konglk.ims.domain.MessageDO;
+import com.konglk.ims.domain.UserDO;
 import com.konglk.ims.event.ResponseEvent;
 import com.konglk.ims.util.SpringUtils;
 import com.konglk.model.Response;
 import com.konglk.model.ResponseStatus;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -36,6 +38,8 @@ public class MessageService {
     private RedisCacheService cacheService;
     @Autowired
     private SpringUtils springUtils;
+    @Autowired
+    private UserService userService;
 
     public List<MessageDO> prevMessages(String cid, Date createtime, boolean include) {
         Query query = new Query();
@@ -67,9 +71,17 @@ public class MessageService {
     撤回消息
      */
     public void revocation(String userId, String msgId) {
+        MessageDO message = findByMsgId(msgId);
+        if (msgId == null)
+            throw new IllegalArgumentException();
+        //更新消息会话类型
         updateMsgType(userId, msgId, 5);
-        notifyRevocation(msgId);
+        conversationService.updateLastTime(message.getConversationId(), null, 5, null);
+        //通知客户端消息变动
+        Response response = new Response(ResponseStatus.REVOCATION, Response.MESSAGE, JSON.toJSONString(message));
+        notify(message, response);
     }
+
 
     /*
     更新消息类型
@@ -84,21 +96,17 @@ public class MessageService {
         return mongoTemplate.findOne(Query.query(Criteria.where("message_id").is(msgId)), MessageDO.class);
     }
 
-    /*
-    通知对方撤回消息
-     */
-    public void notifyRevocation(String msgId) {
-        MessageDO message = findByMsgId(msgId);
-        notify(message, new Response(ResponseStatus.REVOCATION, Response.MESSAGE, JSON.toJSONString(message)));
-    }
 
     /*
-    消息变动时通知地方
+    消息变动时通知对方
      */
     public void notify(MessageDO message, Response response) {
         if (message != null) {
             if(message.getChatType() == 0) {
-                ResponseEvent event = new ResponseEvent(response, message.getDestId());
+                //消息发送自己和对方
+                ResponseEvent event = new ResponseEvent(response, message.getUserId());
+                springUtils.getApplicationContext().publishEvent(event);
+                event = new ResponseEvent(response, message.getDestId());
                 springUtils.getApplicationContext().publishEvent(event);
             }else if (message.getChatType() == 1) {
                 GroupChatDO groupChat = conversationService.findGroupChat(message.getDestId());
