@@ -13,6 +13,7 @@ public enum ResponseStatus {
     UPDATE_NOTENAME(80005, "update friend notename"), //更新昵称
     TRANSFER_MESSAGE(70001, "message transfer"), //转发消息
     REVOCATION(70002, "message revocation"), //撤回消息
+    DELETE_MESSAGE(70003, "message delete"), //删除消息
     OK(200, "OK");
 
     int code;

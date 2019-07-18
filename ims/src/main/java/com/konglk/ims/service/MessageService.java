@@ -74,6 +74,11 @@ public class MessageService {
         MessageDO message = findByMsgId(msgId);
         if (msgId == null)
             throw new IllegalArgumentException();
+        long time = message.getCreateTime().getTime();
+        long now = System.currentTimeMillis();
+        //超过2分钟的不让撤回
+        if (now-time > 2*60*1000L)
+            return;
         //更新消息会话类型
         updateMsgType(userId, msgId, 5);
         conversationService.updateLastTime(message.getConversationId(), null, 5, null);
@@ -96,6 +101,11 @@ public class MessageService {
         return mongoTemplate.findOne(Query.query(Criteria.where("message_id").is(msgId)), MessageDO.class);
     }
 
+    public void delByMsgId(String msgId) {
+        MessageDO messageDO = findByMsgId(msgId);
+        mongoTemplate.remove(Query.query(Criteria.where("messageId").is(msgId)), MessageDO.class);
+        notify(messageDO, new Response(ResponseStatus.DELETE_MESSAGE, Response.MESSAGE, JSON.toJSONString(messageDO)));
+    }
 
     /*
     消息变动时通知对方

@@ -27,7 +27,7 @@ public class SudokuGenerator {
     private int gap = 6;
     private int oneGapSize = boardHeight-gap*2;
     private int threeGapSize = (boardHeight-gap*3)/2;
-    private int fiveGapSize = (boardHeight-gap*4)/3;
+    private int fourGapSize = (boardHeight-gap*4)/3;
 
     public BufferedImage clipImages(String[] profileUrls) {
         BufferedImage mergedImage = new BufferedImage(boardWidth, boardHeight, BufferedImage.TYPE_INT_RGB);
@@ -38,7 +38,7 @@ public class SudokuGenerator {
             graphics.clearRect(0, 0, boardWidth, boardHeight);
             BufferedImage[] profileImgs = new BufferedImage[profileUrls.length];
             int length = profileUrls.length;
-            int width = length == 1 ? oneGapSize : length<5? threeGapSize: fiveGapSize;
+            int width = length == 1 ? oneGapSize : length<5? threeGapSize: fourGapSize;
             for (int i=0; i<profileUrls.length; i++) {
                 String profile = profileUrls[i];
                 BufferedImage profileImage = changeSize(width, width, profile);
@@ -67,29 +67,29 @@ public class SudokuGenerator {
                         break;
                     case 5:
                         if (i<2) {
-                            graphics.drawImage(profileImgs[i], (boardWidth-fiveGapSize*2)/2+i*(fiveGapSize+gap), (boardHeight-fiveGapSize*2)/2, null);
+                            graphics.drawImage(profileImgs[i], (boardWidth- fourGapSize *2)/2+i*(fourGapSize +gap), (boardHeight- fourGapSize *2)/2, null);
                         }else
-                            graphics.drawImage(profileImgs[i], gap*((i+1)%3+1)+fiveGapSize*((i+1)%3), (boardHeight-fiveGapSize*2)/2+fiveGapSize+gap, null);
+                            graphics.drawImage(profileImgs[i], gap*((i+1)%3+1)+ fourGapSize *((i+1)%3), (boardHeight- fourGapSize *2)/2+ fourGapSize +gap, null);
                         break;
                     case 6:
-                        graphics.drawImage(profileImgs[i], gap*(i%3 + 1)+fiveGapSize*(i%3), (boardHeight-fiveGapSize*2)/2+fiveGapSize*(i/3)+gap*(i/3), null);
+                        graphics.drawImage(profileImgs[i], gap*(i%3 + 1)+ fourGapSize *(i%3), (boardHeight- fourGapSize *2)/2+ fourGapSize *(i/3)+gap*(i/3), null);
                         break;
                     case 7:
                         if (i==0)
-                            graphics.drawImage(profileImgs[i], (boardWidth-fiveGapSize)/2, gap, null);
+                            graphics.drawImage(profileImgs[i], (boardWidth- fourGapSize)/2, gap, null);
                         else
-                            graphics.drawImage(profileImgs[i], gap*((i-1)%3+1)+fiveGapSize*((i-1)%3),
-                                    gap*((i-1)/3+2)+fiveGapSize*((i-1)/3+1), null);
+                            graphics.drawImage(profileImgs[i], gap*((i-1)%3+1)+ fourGapSize *((i-1)%3),
+                                    gap*((i-1)/3+2)+ fourGapSize *((i-1)/3+1), null);
                         break;
                     case 8:
                         if (i<2)
-                            graphics.drawImage(profileImgs[i], (boardWidth-fiveGapSize*2)/2+i*fiveGapSize+i*gap, gap, null);
+                            graphics.drawImage(profileImgs[i], (boardWidth- fourGapSize *2)/2+i* fourGapSize +i*gap, gap, null);
                         else
-                            graphics.drawImage(profileImgs[i], gap*((i-2)%3 + 1)+fiveGapSize*((i-2)%3),
-                                    gap*((i-2)/3+2)+fiveGapSize*((i-2)/3+1), null);
+                            graphics.drawImage(profileImgs[i], gap*((i-2)%3 + 1)+ fourGapSize *((i-2)%3),
+                                    gap*((i-2)/3+2)+ fourGapSize *((i-2)/3+1), null);
                         break;
                     case 9:
-                        graphics.drawImage(profileImgs[i], gap*(i%3+1)+fiveGapSize*(i%3), gap*(i/3+1)+fiveGapSize*(i/3), null);
+                        graphics.drawImage(profileImgs[i], gap*(i%3+1)+ fourGapSize *(i%3), gap*(i/3+1)+ fourGapSize *(i/3), null);
                         break;
                 }
             }

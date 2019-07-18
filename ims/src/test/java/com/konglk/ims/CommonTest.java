@@ -20,7 +20,7 @@ import java.io.FileNotFoundException;
  * Created by konglk on 2019/6/6.
  */
 @RunWith(SpringJUnit4ClassRunner.class)
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK)
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
 public class CommonTest {
     @Test

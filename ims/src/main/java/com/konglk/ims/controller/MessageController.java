@@ -46,6 +46,11 @@ public class MessageController {
         redisCacheService.delUnreadNum(userId, id);
     }
 
+    @DeleteMapping("/delMsg")
+    public void delMsg(String msgId) {
+        messageService.delByMsgId(msgId);
+    }
+
 
 
 }
