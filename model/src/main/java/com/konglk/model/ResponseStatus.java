@@ -6,14 +6,16 @@ package com.konglk.model;
 public enum ResponseStatus {
 
     TICKET_ERROR(60001, "ticket error"), //凭证错误
-    KICK_OUT(80001, "kick out"), //踢出
-    AGREE_FRIEND_REQUEST(80002, "agree friend request"),  //同意好友请求
-    FRIEND_REQUEST(80003, "friend request"), //好友请求
-    GROUP_CHAT(80004, "build group chat"),  //群聊
-    UPDATE_NOTENAME(80005, "update friend notename"), //更新昵称
-    TRANSFER_MESSAGE(70001, "message transfer"), //转发消息
-    REVOCATION(70002, "message revocation"), //撤回消息
-    DELETE_MESSAGE(70003, "message delete"), //删除消息
+    U_KICK_OUT(80001, "kick out"), //踢出
+    U_AGREE_FRIEND_REQUEST(80002, "agree friend request"),  //同意好友请求
+    U_FRIEND_REQUEST(80003, "friend request"), //好友请求
+    U_GROUP_CHAT(80004, "build group chat"),  //群聊
+    U_UPDATE_NOTENAME(80005, "update friend notename"), //更新昵称
+
+    M_TRANSFER_MESSAGE(70001, "message transfer"), //转发消息
+    M_REVOCATION(70002, "message revocation"), //撤回消息
+    M_DELETE_MESSAGE(70003, "message delete"), //删除消息
+    M_UPDATE_CONVERSATION(70004, "update conversation content"),//更新会话显示最后一条消息
     OK(200, "OK");
 
     int code;

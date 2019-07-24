@@ -50,7 +50,7 @@ public class ReplyService {
     账号踢出消息
      */
     public void replyKickout(ChatEndPoint client) {
-        reply(client,new Response(ResponseStatus.KICK_OUT, Response.USER));
+        reply(client,new Response(ResponseStatus.U_KICK_OUT, Response.USER));
     }
 
 }

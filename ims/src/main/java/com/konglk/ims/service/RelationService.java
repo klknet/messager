@@ -1,6 +1,5 @@
 package com.konglk.ims.service;
 
-import com.alibaba.fastjson.JSON;
 import com.konglk.ims.domain.FriendDO;
 import com.konglk.ims.domain.FriendRequestDO;
 import com.konglk.ims.domain.UserDO;
@@ -60,7 +59,7 @@ public class RelationService {
         mongoTemplate.insert(requestDO);
         logger.info("{} add friend request to {}", userDO.getNickname(), destId);
 
-        ResponseEvent event = new ResponseEvent(new Response(ResponseStatus.FRIEND_REQUEST, Response.USER), destId);
+        ResponseEvent event = new ResponseEvent(new Response(ResponseStatus.U_FRIEND_REQUEST, Response.USER), destId);
         springUtils.getApplicationContext().publishEvent(event);
     }
 
@@ -77,7 +76,7 @@ public class RelationService {
         userService.addFriend(friendRequestDO.getDestId(), friendRequestDO.getUserId(), null);
         logger.info("{} agree friend request of {}", friendRequestDO.getDestId(), friendRequestDO.getUserId());
         //通知客户端刷新朋友列表
-        ResponseEvent event = new ResponseEvent(new Response(ResponseStatus.AGREE_FRIEND_REQUEST, Response.USER), friendRequestDO.getUserId());
+        ResponseEvent event = new ResponseEvent(new Response(ResponseStatus.U_AGREE_FRIEND_REQUEST, Response.USER), friendRequestDO.getUserId());
         springUtils.getApplicationContext().publishEvent(event);
 
     }

@@ -5,12 +5,10 @@ import com.konglk.ims.cache.RedisCacheService;
 import com.konglk.ims.domain.FailedMessageDO;
 import com.konglk.ims.domain.GroupChatDO;
 import com.konglk.ims.domain.MessageDO;
-import com.konglk.ims.domain.UserDO;
 import com.konglk.ims.event.ResponseEvent;
 import com.konglk.ims.util.SpringUtils;
 import com.konglk.model.Response;
 import com.konglk.model.ResponseStatus;
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -41,15 +39,15 @@ public class MessageService {
     @Autowired
     private UserService userService;
 
-    public List<MessageDO> prevMessages(String cid, Date createtime, boolean include) {
+    public List<MessageDO> prevMessages(String cid, String userId, Date createtime, boolean include) {
         Query query = new Query();
         //是否包含当前时间点的消息
         if (include) {
-            query.addCriteria(Criteria.where("conversationId").is(cid).and("createTime").gte(createtime));
+            query.addCriteria(Criteria.where("createTime").gte(createtime));
         } else {
-            query.addCriteria(Criteria.where("conversationId").is(cid).and("createTime").gt(createtime));
+            query.addCriteria(Criteria.where("createTime").gt(createtime));
         }
-        query.addCriteria(Criteria.where("type").gte(0));
+        query.addCriteria(Criteria.where("conversationId").is(cid).and("type").gte(0).and("deleteIds").ne(userId));
         query.with(PageRequest.of(0, 32, Sort.by(Sort.Direction.DESC, "createTime")));
         List<MessageDO> messageDOS = mongoTemplate.find(query, MessageDO.class);
         Collections.reverse(messageDOS);
@@ -81,10 +79,10 @@ public class MessageService {
             return;
         //更新消息会话类型
         updateMsgType(userId, msgId, 5);
-        conversationService.updateLastTime(message.getConversationId(), null, 5, null);
+        conversationService.updateLastTime(message.getConversationId(), null, null, 5, null);
         //通知客户端消息变动
-        Response response = new Response(ResponseStatus.REVOCATION, Response.MESSAGE, JSON.toJSONString(message));
-        notify(message, response);
+        Response response = new Response(ResponseStatus.M_REVOCATION, Response.MESSAGE, JSON.toJSONString(message));
+        notifyAll(message, response);
     }
 
 
@@ -92,25 +90,88 @@ public class MessageService {
     更新消息类型
      */
     public void updateMsgType(String userId, String msgId, int type) {
-        Query query = new Query(Criteria.where("message_id").is(msgId).and("user_id").is(userId));
+        Query query = new Query(Criteria.where("messageId").is(msgId).and("user_id").is(userId));
         Update update = Update.update("type", type);
         mongoTemplate.updateFirst(query, update, MessageDO.class);
     }
 
-    public MessageDO findByMsgId(String msgId) {
-        return mongoTemplate.findOne(Query.query(Criteria.where("message_id").is(msgId)), MessageDO.class);
-    }
-
-    public void delByMsgId(String msgId) {
-        MessageDO messageDO = findByMsgId(msgId);
-        mongoTemplate.remove(Query.query(Criteria.where("messageId").is(msgId)), MessageDO.class);
-        notify(messageDO, new Response(ResponseStatus.DELETE_MESSAGE, Response.MESSAGE, JSON.toJSONString(messageDO)));
-    }
-
-    /*
-    消息变动时通知对方
+    /**
+     * 该条消息对指定用户删除
+     * @param msgId
+     * @param userId
      */
-    public void notify(MessageDO message, Response response) {
+    public void addToDeleteList(String msgId, String userId) {
+        Query query = new Query(Criteria.where("messageId").is(msgId));
+        Update update = new Update();
+        update.addToSet("deleteIds", userId);
+        mongoTemplate.updateFirst(query, update, MessageDO.class);
+    }
+
+    public MessageDO findByMsgId(String msgId) {
+        return mongoTemplate.findOne(Query.query(Criteria.where("messageId").is(msgId)), MessageDO.class);
+    }
+
+    /**
+     * 上一条消息
+     * @param msgId
+     * @param date
+     * @return
+     */
+    public MessageDO prevMessage(String conversationId, Date date) {
+        Query query = Query.query(Criteria.where("conversationId").is(conversationId).and("createTime").lt(date)).limit(1);
+        return mongoTemplate.findOne(query, MessageDO.class);
+    }
+
+    /**
+     * 是否最好一条消息
+     * @param msgId
+     * @param date
+     * @return
+     */
+    public boolean isLastMessage(String conversationId, String userId, Date date) {
+        return !mongoTemplate.exists(Query.query(Criteria.where("conversationId")
+                .is(conversationId).and("createTime").gt(date)
+                .and("type").gte(0).and("deleteIds").ne(userId)), MessageDO.class);
+    }
+
+    public void delByMsgId(String msgId, String userId) {
+        MessageDO messageDO = findByMsgId(msgId);
+        boolean lastMsg = isLastMessage(messageDO.getConversationId(), userId, messageDO.getCreateTime());
+        //最后一条消息要同步更新会话
+        if (lastMsg) {
+            MessageDO preMsg = prevMessage(messageDO.getConversationId(), messageDO.getCreateTime());
+            if (preMsg != null) {
+                conversationService.updateLastTime(messageDO.getConversationId(), userId, preMsg.getCreateTime(), preMsg.getType(), preMsg.getContent());
+            }else
+                conversationService.updateLastTime(messageDO.getConversationId(), userId, null, 0, "");
+            springUtils.getApplicationContext().publishEvent(new ResponseEvent(
+                    new Response(
+                            ResponseStatus.M_UPDATE_CONVERSATION,
+                            Response.MESSAGE,
+                            JSON.toJSONString(conversationService.findByConversationIdAndUserId(messageDO.getConversationId(), userId))),
+                    userId));
+        }
+
+        if (messageDO.getUserId().equals(userId)) {
+            //删除自己发送的消息
+            updateMsgType(userId, msgId, -1);
+            notifyAll(messageDO, new Response(ResponseStatus.M_DELETE_MESSAGE, Response.MESSAGE, JSON.toJSONString(messageDO)));
+
+        }else {
+            //删除对方的消息
+            addToDeleteList(msgId, userId);
+            springUtils.getApplicationContext()
+                    .publishEvent(new ResponseEvent(
+                            new Response(ResponseStatus.M_DELETE_MESSAGE, Response.MESSAGE, JSON.toJSONString(messageDO)),
+                            userId));
+        }
+    }
+
+    /**
+     *
+    消息变动时通知自己和对方
+     */
+    public void notifyAll(MessageDO message, Response response) {
         if (message != null) {
             if(message.getChatType() == 0) {
                 //消息发送自己和对方

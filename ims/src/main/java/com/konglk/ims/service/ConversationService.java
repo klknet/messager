@@ -35,7 +35,7 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static com.konglk.model.ResponseStatus.GROUP_CHAT;
+import static com.konglk.model.ResponseStatus.U_GROUP_CHAT;
 
 @Service
 public class ConversationService {
@@ -155,21 +155,28 @@ public class ConversationService {
         logger.info("delete conversation {} {}", conversationId, userId);
     }
 
-    /*
-    更新会话时间，消息
+    /**
+     * 更新会话时间，消息
+     * @param conversationId
+     * @param userId 如果为空，更新多方
+     * @param date
+     * @param type
+     * @param msg
      */
-    public void updateLastTime(String conversationId, Date date, int type, String msg) {
+    public void updateLastTime(String conversationId, String userId, Date date, Integer type, String msg) {
         //会话最后更新时间要晚于消息发送时间
         Criteria criteria = Criteria.where("conversationId").is(conversationId);
+        if (StringUtils.isNotEmpty(userId))
+            criteria.and("userId").is(userId);
         Query query = new Query(criteria);
         Update update = new Update();
         if(date != null) {
-            criteria.and("updateTime").lte(date);
+//            criteria.and("updateTime").lte(date);
             update.set("updateTime", date);
         }
-        update.set("messageType", type);
-        if(StringUtils.isNotEmpty(msg))
-            update.set("lastMsg", msg);
+        if (type != null)
+            update.set("messageType", type);
+        update.set("lastMsg", msg);
         mongoTemplate.updateMulti(query, update, ConversationDO.class);
     }
 
@@ -221,6 +228,12 @@ public class ConversationService {
         return conversationDO;
     }
 
+    public ConversationDO findByConversationIdAndUserId(String conversationId, String userId) {
+        return mongoTemplate.findOne(Query.query(
+                Criteria.where("conversationId").is(conversationId).and("userId").is(userId)),
+                ConversationDO.class);
+    }
+
     /*
     查询群聊成员
      */
@@ -251,7 +264,7 @@ public class ConversationService {
                 this.joinConversation(messageDO.getDestId(), messageDO.getUserId(),
                         messageDO.getConversationId(), messageDO.getCreateTime());
             }
-            this.updateLastTime(messageDO.getConversationId(), messageDO.getCreateTime(), messageDO.getType(), messageDO.getContent());
+            this.updateLastTime(messageDO.getConversationId(), messageDO.getDestId(), messageDO.getCreateTime(), messageDO.getType(), messageDO.getContent());
         } else {
             updateGroupChat(conv.getDestId(), messageDO.getType(), messageDO.getContent());
         }
@@ -316,7 +329,7 @@ public class ConversationService {
             mongoTemplate.insert(conv);
             logger.info("build group conversation {} {}", uId, notename);
             //通知群聊会话已创建
-            Response response = new Response(GROUP_CHAT, Response.USER);
+            Response response = new Response(U_GROUP_CHAT, Response.USER);
             ResponseEvent event = new ResponseEvent(response, uId);
             springUtils.getApplicationContext().publishEvent(event);
         }

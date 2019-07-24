@@ -27,8 +27,8 @@ public class MessageController {
     取晚于createtime后消息
      */
     @GetMapping("/prev")
-    public Object prev(String cid, String createtime, boolean include) throws ParseException {
-        return messageService.prevMessages(cid, new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSX").parse(createtime), include);
+    public Object prev(String cid, String userId, String createtime, boolean include) throws ParseException {
+        return messageService.prevMessages(cid, userId, new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSX").parse(createtime), include);
     }
 
     /*
@@ -47,8 +47,8 @@ public class MessageController {
     }
 
     @DeleteMapping("/delMsg")
-    public void delMsg(String msgId) {
-        messageService.delByMsgId(msgId);
+    public void delMsg(String msgId, String userId) {
+        messageService.delByMsgId(msgId, userId);
     }
 
 

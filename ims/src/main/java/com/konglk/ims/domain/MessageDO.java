@@ -1,6 +1,7 @@
 package com.konglk.ims.domain;
 
 import java.util.Date;
+import java.util.List;
 
 import org.springframework.data.mongodb.core.index.CompoundIndex;
 import org.springframework.data.mongodb.core.index.Indexed;
@@ -24,9 +25,11 @@ public class MessageDO
   @Field("dest_id")
   private String destId;
   @Field
-  private int type; //0-文字 1-图片 2-表情 3-语音 4-视频 5-撤回 -1-删除
+  private Integer type; //0-文字 1-图片 2-表情 3-语音 4-视频 5-撤回 -1-删除
   @Field("chat_type")
-  private int chatType; //0- 一对一聊天  1- 群聊
+  private Integer chatType; //0- 一对一聊天  1- 群聊
+  @Field("delete_ids")
+  private List<String> deleteIds; //删除这条消息的用户id
 
   public String getMessageId()
   {
@@ -87,22 +90,28 @@ public class MessageDO
   {
     this.destId = destId;
   }
-  
-  public int getType()
-  {
-    return this.type;
+
+  public Integer getType() {
+    return type;
   }
-  
-  public void setType(int type)
-  {
+
+  public void setType(Integer type) {
     this.type = type;
   }
 
-  public int getChatType() {
+  public Integer getChatType() {
     return chatType;
   }
 
-  public void setChatType(int chatType) {
+  public void setChatType(Integer chatType) {
     this.chatType = chatType;
+  }
+
+  public List<String> getDeleteIds() {
+    return deleteIds;
+  }
+
+  public void setDeleteIds(List<String> deleteIds) {
+    this.deleteIds = deleteIds;
   }
 }

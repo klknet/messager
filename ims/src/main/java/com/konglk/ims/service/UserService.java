@@ -243,7 +243,7 @@ public class UserService {
         rawPwd = DigestUtils.md5DigestAsHex(rawPwd.getBytes());
         user.setRawPwd(rawPwd);
         if(StringUtils.isEmpty(user.getProfileUrl())) {
-            user.setProfileUrl("http://"+host+"/static/"+
+            user.setProfileUrl("http://39.106.133.40/static/"+
                     (user.getGender()==1 ? "default_male.jpg" : "default_female.jpg"));
         }
     }

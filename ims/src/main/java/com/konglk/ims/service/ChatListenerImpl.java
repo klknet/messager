@@ -56,7 +56,7 @@ public class ChatListenerImpl implements MessageListener {
                 //未读消息+1
                 executor.submit(()->incrementUnread(m));
                 //消息处理事件
-                executor.submit(()->messageService.notify(m, new Response(ResponseStatus.TRANSFER_MESSAGE, Response.MESSAGE, t)));
+                executor.submit(()->messageService.notifyAll(m, new Response(ResponseStatus.M_TRANSFER_MESSAGE, Response.MESSAGE, t)));
             }catch(JMSException jms) {
                 logger.error(jms.getMessage(), jms);
             } catch (Exception e) {

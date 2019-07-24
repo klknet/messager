@@ -40,9 +40,9 @@ public class ConversationDO {
     @Field("hide_name")
     private boolean hideName;// 群聊时隐藏昵称
     @Field
-    private int type; //0: 一对一 1: 群聊
+    private Integer type; //0: 一对一 1: 群聊
     @Field("message_type")
-    private int messageType; //消息类型
+    private Integer messageType; //消息类型
     @Transient
     private long unreadCount; //未读消息
 
@@ -153,11 +153,11 @@ public class ConversationDO {
         this.topUpdateTime = topUpdateTime;
     }
 
-    public int getMessageType() {
+    public Integer getMessageType() {
         return messageType;
     }
 
-    public void setMessageType(int messageType) {
+    public void setMessageType(Integer messageType) {
         this.messageType = messageType;
     }
 

@@ -13,7 +13,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.constraints.NotNull;
-import java.sql.Connection;
 
 @RestController
 @RequestMapping({"/user"})
@@ -66,7 +65,7 @@ public class UserController {
         userService.setFriendNotename(userId, destId, notename);
         conversationService.updateConversationName(userId, destId, notename);
         ResponseEvent event =
-                new ResponseEvent(new Response(com.konglk.model.ResponseStatus.UPDATE_NOTENAME, Response.USER), userId);
+                new ResponseEvent(new Response(com.konglk.model.ResponseStatus.U_UPDATE_NOTENAME, Response.USER), userId);
         springUtils.getApplicationContext().publishEvent(event);
     }
 }
