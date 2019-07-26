@@ -113,11 +113,11 @@ public class ConversationDO {
         this.profileUrl = profileUrl;
     }
 
-    public int getType() {
+    public Integer getType() {
         return type;
     }
 
-    public void setType(int type) {
+    public void setType(Integer type) {
         this.type = type;
     }
 
