@@ -91,7 +91,7 @@ public class ConversationService {
         //置顶回话排在前面
         for (ConversationDO conv: convs) {
             ids.add(conv.getId());
-            if (conv.getType() == 1)
+            if (new Integer(1).equals(conv.getType()))
                 groupConvs.add(conv);
             if (BooleanUtils.isTrue(conv.getTop()))
                 tops.add(conv);
@@ -258,7 +258,7 @@ public class ConversationService {
 
     public void updateConversation(MessageDO messageDO) {
         ConversationDO conv = findByUserIdAndDestId(messageDO.getUserId(), messageDO.getDestId());
-        if (conv.getType() == 0) {
+        if (new Integer(0).equals(conv.getType())) {
             // 如果一方没有会话，则创建会话
             if (!this.existConversation(messageDO.getDestId(), messageDO.getUserId())) {
                 this.joinConversation(messageDO.getDestId(), messageDO.getUserId(),
@@ -369,6 +369,7 @@ public class ConversationService {
         conversationDO.setCreateTime(new Date());
         conversationDO.setUpdateTime(new Date());
         conversationDO.setUserId(userId);
+        conversationDO.setType(0);
         return conversationDO;
     }
 

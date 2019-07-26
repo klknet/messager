@@ -113,7 +113,6 @@ public class MessageService {
 
     /**
      * 上一条消息
-     * @param msgId
      * @param date
      * @return
      */
@@ -124,7 +123,7 @@ public class MessageService {
 
     /**
      * 是否最好一条消息
-     * @param msgId
+     * @param conversationId
      * @param date
      * @return
      */
@@ -173,13 +172,13 @@ public class MessageService {
      */
     public void notifyAll(MessageDO message, Response response) {
         if (message != null) {
-            if(message.getChatType() == 0) {
+            if(new Integer(0).equals(message.getChatType())) {
                 //消息发送自己和对方
                 ResponseEvent event = new ResponseEvent(response, message.getUserId());
                 springUtils.getApplicationContext().publishEvent(event);
                 event = new ResponseEvent(response, message.getDestId());
                 springUtils.getApplicationContext().publishEvent(event);
-            }else if (message.getChatType() == 1) {
+            }else if (new Integer(1).equals(message.getChatType())) {
                 GroupChatDO groupChat = conversationService.findGroupChat(message.getDestId());
                 groupChat.getMembers().forEach(m -> {
                     ResponseEvent event = new ResponseEvent(response, m.getUserId());
