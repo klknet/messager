@@ -5,17 +5,14 @@ import com.konglk.ims.util.SpringUtils;
 import com.konglk.model.Request;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Scope;
-import org.springframework.stereotype.Component;
 
 import javax.websocket.*;
 import javax.websocket.server.ServerEndpoint;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 @ServerEndpoint(value = "/ws/chat")
 public class ChatEndPoint {
-    private static final AtomicInteger connectionIds = new AtomicInteger();
+    private static final AtomicLong connectionIds = new AtomicLong();
     private static final Logger logger = LoggerFactory.getLogger(ChatEndPoint.class);
 
     private String nickname;
