@@ -1,4 +1,4 @@
-host: 192.168.183.100
+host: 192.168.1.100
 spring:
   servlet:
     multipart:
