@@ -1,8 +1,5 @@
 host: 39.106.133.40
 spring:
-  servlet:
-    multipart:
-      location: ${user.dir}
   data:
     mongodb:
       address: ${host}:27017
