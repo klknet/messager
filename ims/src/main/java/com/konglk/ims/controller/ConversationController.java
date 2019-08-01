@@ -8,12 +8,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.web.bind.annotation.*;
 
-import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.List;
 
 @RestController
 @RequestMapping({"/conversation"})
@@ -25,6 +24,8 @@ public class ConversationController {
     private ConversationService conversationService;
     @Autowired
     private RedisCacheService redisCacheService;
+    @Autowired
+    private ThreadPoolTaskExecutor taskExecutor;
 
 
     @PostMapping({"/build"})
@@ -37,8 +38,14 @@ public class ConversationController {
      */
     @PostMapping("/groupChat")
     @ResponseStatus(value = HttpStatus.NO_CONTENT)
-    public void groupChat(String userId, String userIds, String notename) throws IOException {
-         conversationService.groupConversation(userId, Arrays.asList(userIds.split(",")), notename);
+    public void groupChat(String userId, String userIds, String notename) {
+        taskExecutor.submit(()-> {
+            try {
+                conversationService.groupConversation(userId, Arrays.asList(userIds.split(",")), notename);
+            } catch (IOException e) {
+                logger.error(e.getMessage(), e);
+            }
+        });
     }
 
     @GetMapping({"/list"})

@@ -4,6 +4,7 @@ import com.konglk.ims.domain.FriendDO;
 import com.konglk.ims.domain.UserDO;
 import com.konglk.ims.util.DecodeUtils;
 
+import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -17,6 +18,7 @@ import com.mongodb.BasicDBObjectBuilder;
 import org.apache.catalina.User;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
+import org.bson.types.ObjectId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
@@ -33,9 +35,11 @@ import org.springframework.data.mongodb.core.query.BasicQuery;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
+import org.springframework.data.mongodb.gridfs.GridFsTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.DigestUtils;
+import org.springframework.web.multipart.MultipartFile;
 
 @Service
 public class UserService {
@@ -50,6 +54,10 @@ public class UserService {
     private String host;
     @Autowired
     private ReplyService replyService;
+    @Autowired
+    private GridFsTemplate gridFsTemplate;
+    @Autowired
+    private ConversationService conversationService;
 
 
     public UserDO login(String unique, String pwd) {
@@ -90,6 +98,26 @@ public class UserService {
         this.logger.info("add new user {}", user.getUsername());
     }
 
+    /**
+     * 更新头像
+     * @param userId
+     * @param multipartFile
+     * @return
+     */
+    public String updateAvatar(String userId, MultipartFile multipartFile) throws IOException {
+        UserDO userDO = findByUserId(userId);
+        if (userDO == null)
+            throw new IllegalArgumentException();
+        ObjectId objectId = gridFsTemplate.store(multipartFile.getInputStream(), multipartFile.getOriginalFilename(), multipartFile.getContentType());
+        userDO = mongoTemplate.findAndModify(
+                Query.query(Criteria.where("userId").is(userId)),
+                Update.update("profileUrl", objectId.toString()), UserDO.class);
+        if (!CollectionUtils.isEmpty(userDO.getFriends()))
+            updateFriendAvatar(userDO.getFriends().stream().map(FriendDO::getUserId).collect(Collectors.toList()), userId, objectId.toString());
+        conversationService.updateConvProfile(userId, objectId.toString());
+        return objectId.toString();
+    }
+
     /*
     批量添加用户
      */
@@ -118,6 +146,22 @@ public class UserService {
         Update update = new Update();
         update.set("friends.$.remark", notename);
         mongoTemplate.updateFirst(query, update, UserDO.class);
+    }
+
+    /**
+     * 通知更新好友的头像
+     * @param userIds
+     * @param destId
+     * @param profileUrl
+     */
+    public void updateFriendAvatar(List<String> userIds, String destId, String profileUrl) {
+        if(CollectionUtils.isEmpty(userIds))
+            return;
+        Query query = new Query();
+        query.addCriteria(Criteria.where("userId").in(userIds).and("friends.userId").is(destId));
+        Update update = new Update();
+        update.set("friends.$.profileUrl", profileUrl);
+        mongoTemplate.updateMulti(query, update, UserDO.class);
     }
 
     /*

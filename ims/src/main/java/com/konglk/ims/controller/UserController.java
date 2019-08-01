@@ -11,8 +11,10 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import javax.validation.constraints.NotNull;
+import java.io.IOException;
 
 @RestController
 @RequestMapping({"/user"})
@@ -67,5 +69,10 @@ public class UserController {
         ResponseEvent event =
                 new ResponseEvent(new Response(com.konglk.model.ResponseStatus.U_UPDATE_NOTENAME, Response.USER), userId);
         springUtils.getApplicationContext().publishEvent(event);
+    }
+
+    @PostMapping("/updateAvatar")
+    public String updateAvatar(String userId, MultipartFile file) throws IOException {
+        return userService.updateAvatar(userId, file);
     }
 }

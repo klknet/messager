@@ -22,7 +22,6 @@ import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.data.mongodb.gridfs.GridFsTemplate;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
@@ -201,7 +200,7 @@ public class ConversationService {
     /*
     加入到会议
      */
-    public void joinConversation(String userId, String destId, String conversationId, Date createtime) {
+    public void joinConversation(String userId, String destId, String conversationId, Date createtime, Integer type) {
         ConversationDO conversationDO = new ConversationDO();
         UserDO friend = userService.findByUserId(destId);
         UserDO userDO = userService.findByUserId(userId);
@@ -219,6 +218,7 @@ public class ConversationService {
         conversationDO.setConversationId(conversationId);
         conversationDO.setCreateTime(createtime);
         conversationDO.setUpdateTime(createtime);
+        conversationDO.setType(type);
         mongoTemplate.insert(conversationDO);
     }
 
@@ -262,7 +262,7 @@ public class ConversationService {
             // 如果一方没有会话，则创建会话
             if (!this.existConversation(messageDO.getDestId(), messageDO.getUserId())) {
                 this.joinConversation(messageDO.getDestId(), messageDO.getUserId(),
-                        messageDO.getConversationId(), messageDO.getCreateTime());
+                        messageDO.getConversationId(), messageDO.getCreateTime(), messageDO.getChatType());
             }
             this.updateLastTime(messageDO.getConversationId(), messageDO.getDestId(), messageDO.getCreateTime(), messageDO.getType(), messageDO.getContent());
         } else {
@@ -285,7 +285,6 @@ public class ConversationService {
     /*
     群聊
      */
-    @Async
     public void groupConversation(String userId, List<String> userIds, String notename) throws IOException {
         if (StringUtils.isEmpty(userId) || CollectionUtils.isEmpty(userIds))
             return;
@@ -333,6 +332,17 @@ public class ConversationService {
             ResponseEvent event = new ResponseEvent(response, uId);
             springUtils.getApplicationContext().publishEvent(event);
         }
+    }
+
+    /**
+     * 更新好友会话头像
+     * @param userId
+     * @param profileUrl
+     */
+    public void updateConvProfile(String userId, String profileUrl) {
+        Query query = new Query(Criteria.where("destId").is(userId));
+        Update update = Update.update("profileUrl", profileUrl);
+        mongoTemplate.updateMulti(query, update, ConversationDO.class);
     }
 
     private ConversationDO getConversationDO(String userId, String destId) {
