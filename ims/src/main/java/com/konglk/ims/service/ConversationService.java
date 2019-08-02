@@ -264,7 +264,7 @@ public class ConversationService {
                 this.joinConversation(messageDO.getDestId(), messageDO.getUserId(),
                         messageDO.getConversationId(), messageDO.getCreateTime(), messageDO.getChatType());
             }
-            this.updateLastTime(messageDO.getConversationId(), messageDO.getDestId(), messageDO.getCreateTime(), messageDO.getType(), messageDO.getContent());
+            this.updateLastTime(messageDO.getConversationId(), null, messageDO.getCreateTime(), messageDO.getType(), messageDO.getContent());
         } else {
             updateGroupChat(conv.getDestId(), messageDO.getType(), messageDO.getContent());
         }
