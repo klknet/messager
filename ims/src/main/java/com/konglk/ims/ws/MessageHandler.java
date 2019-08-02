@@ -62,10 +62,8 @@ public class MessageHandler {
                     return;
                 if (StringUtils.isNotEmpty(request.getTicket()) && client.isAuth() &&
                         StringUtils.equals(client.getTicket(), request.getTicket())){
-                    //保证消息的幂等性
-                    messageDO.setMessageId(UUID.randomUUID().toString());
                     //消息发送到mq
-                    producer.send(JSON.toJSONString(messageDO));
+                    producer.send(request.getData(), messageDO.getConversationId());
                 }else {
                     logger.warn("user {} not authenticated", messageDO.getUserId());
                     client.getSession().close();

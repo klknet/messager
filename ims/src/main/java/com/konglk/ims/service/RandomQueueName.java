@@ -22,6 +22,10 @@ public class RandomQueueName {
         return base() + (System.currentTimeMillis() % queueNum);
     }
 
+    public String getQueueName(String route) {
+        return base() + Math.abs(route.hashCode() % queueNum);
+    }
+
     public String[] queues() {
         String[] names = new String[queueNum];
         int i = queueNum;

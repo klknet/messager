@@ -17,13 +17,13 @@ public class ChatProducer {
     @Autowired
     private RandomQueueName randomQueueName;
 
-    public void send(String text) {
+    public void send(String text, String route) {
         QueueConnection connection = null;
         try {
             connection = factory.createQueueConnection();
             connection.start();
             QueueSession session = connection.createQueueSession(false, Session.AUTO_ACKNOWLEDGE);
-            MessageProducer producer = session.createProducer(session.createQueue(randomQueueName.getQueueName()));
+            MessageProducer producer = session.createProducer(session.createQueue(randomQueueName.getQueueName(route)));
             TextMessage textMessage = session.createTextMessage(text);
             producer.send(textMessage);
         } catch (JMSException e) {
