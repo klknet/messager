@@ -1,4 +1,5 @@
 rootProject.name = 'messager'
 include 'ims'
 include 'model'
+include 'xmpp'
 

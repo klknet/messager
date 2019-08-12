@@ -6,4 +6,5 @@
 /ims/build/
 /model/out/
 /model/build/
+/xmpp/out/
 **/application-dev.yml

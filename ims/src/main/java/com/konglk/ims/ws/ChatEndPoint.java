@@ -8,6 +8,8 @@ import org.slf4j.LoggerFactory;
 
 import javax.websocket.*;
 import javax.websocket.server.ServerEndpoint;
+import java.io.*;
+import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicLong;
 
 @ServerEndpoint(value = "/ws/chat")
@@ -42,6 +44,15 @@ public class ChatEndPoint {
         logger.debug(message);
         Request request = (Request) JSON.parseObject(message, Request.class);
         this.messageHandler.process(request, this);
+    }
+
+    @OnMessage
+    public void incoming(ByteBuffer buffer) throws IOException {
+        logger.info("receive file");
+        RandomAccessFile out = new RandomAccessFile(new File("d:/tt"), "rw");
+        out.seek(out.length());
+        out.write(buffer.array());
+        out.close();
     }
 
     @OnClose
