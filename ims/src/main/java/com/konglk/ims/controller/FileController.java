@@ -2,13 +2,18 @@ package com.konglk.ims.controller;
 
 import com.alibaba.fastjson.JSON;
 import com.konglk.ims.cache.RedisCacheService;
+import com.konglk.ims.domain.MessageDO;
+import com.konglk.ims.model.FileDetail;
 import com.konglk.ims.model.FileMeta;
+import com.konglk.ims.service.ChatProducer;
 import com.mongodb.client.gridfs.GridFSBucket;
 import com.mongodb.client.gridfs.GridFSBuckets;
 import com.mongodb.client.gridfs.model.GridFSFile;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
 import org.bson.types.ObjectId;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.mongodb.MongoDbFactory;
 import org.springframework.data.mongodb.core.query.Criteria;
@@ -16,7 +21,11 @@ import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.gridfs.GridFsTemplate;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
+import org.springframework.util.MimeType;
+import org.springframework.util.MimeTypeUtils;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.ServletInputStream;
 import javax.servlet.ServletOutputStream;
@@ -26,10 +35,8 @@ import javax.servlet.http.Part;
 import java.io.*;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.nio.file.FileSystem;
-import java.nio.file.FileSystems;
-import java.nio.file.InvalidPathException;
-import java.nio.file.Path;
+import java.net.URLEncoder;
+import java.nio.file.*;
 
 /**
  * Created by konglk on 2019/6/10.
@@ -44,7 +51,20 @@ public class FileController {
     private MongoDbFactory mongoDbFactory;
     @Autowired
     private RedisCacheService cacheService;
+    @Autowired
+    private ThreadPoolTaskExecutor executor;
+    @Autowired
+    private ChatProducer producer;
 
+    private Logger logger = LoggerFactory.getLogger(getClass());
+
+    /**
+     * 获取图片，支持浏览器304 缓存
+     * @param id
+     * @param request
+     * @param response
+     * @throws IOException
+     */
     @GetMapping("/img")
     public void getImg(@RequestParam String id, HttpServletRequest request, HttpServletResponse response) throws IOException {
         String etag = request.getHeader(HttpHeaders.IF_NONE_MATCH);
@@ -84,40 +104,79 @@ public class FileController {
 
     }
 
+    /**
+     * 文件上传，支持断点续传
+     * @param id
+     * @param fileName
+     * @param file
+     * @param request
+     * @param response
+     * @throws Exception
+     */
     @PostMapping("/upload")
-    public void uploadFile(@RequestParam String id, @RequestParam String fileName, HttpServletRequest request, HttpServletResponse response) throws Exception {
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void uploadFile(@RequestParam String id, @RequestParam String fileName, MultipartFile file, HttpServletRequest request, HttpServletResponse response) throws Exception {
         try {
             String rangeHeader = request.getHeader(HttpHeaders.RANGE);
-            ServletInputStream inputStream = request.getInputStream();
-            //小文件直接上传
-            if (StringUtils.isEmpty(rangeHeader)) {
-                Part filePart = request.getPart("file");
-                ObjectId objectId = gridFsTemplate.store(inputStream, fileName, filePart.getContentType());
-                response.setStatus(HttpStatus.OK.value());
-                response.getOutputStream().print(objectId.toString());
-                return;
-            }
             //大文件支持断点上传
-            File file = new File(request.getServletContext().getRealPath("/")+id);
-            RandomAccessFile randomAccessFile = new RandomAccessFile(file, "w");
-            randomAccessFile.seek(randomAccessFile.length());
-
-            byte[] buff = new byte[1024];
-            while (!inputStream.isFinished()) {
-                int actual = inputStream.read(buff);
-                randomAccessFile.write(buff, 0, actual);
-            }
+            byte[] bytes = file.getBytes();
+            StringUtils.substringAfter(fileName, ".");
+            File writeFile = new File(request.getServletContext().getRealPath("/")+id+fileName.substring(fileName.lastIndexOf(".")));
+            RandomAccessFile randomAccessFile = new RandomAccessFile(writeFile, "rw");
+            randomAccessFile.seek(Long.valueOf(rangeHeader.split("=")[1].split("-")[0]));
+            randomAccessFile.write(bytes);
             response.setHeader(HttpHeaders.CONTENT_RANGE, "bytes="+randomAccessFile.length());
             randomAccessFile.close();
-
-
         } catch (InvalidPathException e) {
             response.setStatus(HttpStatus.BAD_REQUEST.value());
         }
     }
 
-    @PutMapping("/uploadDone")
-    public void uploadDone(@RequestParam String id, String msgId) {
+    /**
+     * 上传完毕后通知服务器
+     * @param id
+     * @param fileName
+     * @param messageDO
+     * @param request
+     */
+    @PostMapping("/uploadDone")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void uploadDone(@RequestParam String id, @RequestParam String fileName, @RequestBody MessageDO messageDO, HttpServletRequest request) {
+        executor.submit(() -> {
+            try {
+                Path path = Paths.get(request.getServletContext().getRealPath("/") + id + fileName.substring(fileName.lastIndexOf(".")));
+                File file = path.toFile();
+                FileInputStream in = new FileInputStream(file);
+                String contentType = Files.probeContentType(path);
+                ObjectId objectId = gridFsTemplate.store(in, fileName, contentType);
+                in.close();
+                messageDO.setContent(objectId.toString());
+                GridFSFile gridFSFile = gridFsTemplate.findOne(Query.query(Criteria.where("_id").is(objectId)));
+                messageDO.setFileDetail(new FileDetail(gridFSFile.getLength(), gridFSFile.getFilename(),
+                        gridFSFile.getMetadata()==null?"":gridFSFile.getMetadata().getString("_contentType")));
+                producer.send(JSON.toJSONString(messageDO), messageDO.getConversationId());
+                file.delete();
+            } catch (IOException e) {
+                logger.error(e.getMessage(), e);
+            }
+        });
+    }
 
+    /**
+     * 文件下载
+     * @param id
+     * @param response
+     * @throws IOException
+     */
+    @GetMapping("download")
+    public void download(String id, HttpServletResponse response) throws IOException {
+        GridFSFile gridFSFile = gridFsTemplate.findOne(Query.query(Criteria.where("_id").is(id)));
+        response.setContentType(gridFSFile.getMetadata().getString("_contentType"));
+        response.setHeader(HttpHeaders.CONTENT_LENGTH, String.valueOf(gridFSFile.getLength()));
+        response.setHeader(HttpHeaders.CONTENT_DISPOSITION, "attachment;filename="+ URLEncoder.encode(gridFSFile.getFilename(), "utf-8"));
+        ServletOutputStream outputStream = response.getOutputStream();
+        GridFSBucket gridFSBucket = GridFSBuckets.create(mongoDbFactory.getDb());
+        gridFSBucket.downloadToStream(gridFSFile.getObjectId(), outputStream);
+        outputStream.close();
     }
 }

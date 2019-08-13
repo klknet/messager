@@ -6,9 +6,11 @@ import com.konglk.ims.domain.FailedMessageDO;
 import com.konglk.ims.domain.GroupChatDO;
 import com.konglk.ims.domain.MessageDO;
 import com.konglk.ims.event.ResponseEvent;
+import com.konglk.ims.model.FileDetail;
 import com.konglk.ims.util.SpringUtils;
 import com.konglk.model.Response;
 import com.konglk.model.ResponseStatus;
+import com.mongodb.client.gridfs.model.GridFSFile;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -16,6 +18,7 @@ import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
+import org.springframework.data.mongodb.gridfs.GridFsTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.Collections;
@@ -38,6 +41,8 @@ public class MessageService {
     private SpringUtils springUtils;
     @Autowired
     private UserService userService;
+    @Autowired
+    private GridFsTemplate gridFsTemplate;
 
     public List<MessageDO> prevMessages(String cid, String userId, Date createtime, boolean include) {
         Query query = new Query();
@@ -50,6 +55,12 @@ public class MessageService {
         query.addCriteria(Criteria.where("conversationId").is(cid).and("type").gte(0).and("deleteIds").ne(userId));
         query.with(PageRequest.of(0, 32, Sort.by(Sort.Direction.DESC, "createTime")));
         List<MessageDO> messageDOS = mongoTemplate.find(query, MessageDO.class);
+        messageDOS.forEach(m -> {
+            if (new Integer(2).equals(m.getType())) {
+                GridFSFile gridFSFile = gridFsTemplate.findOne(Query.query(Criteria.where("_id").is(m.getContent())));
+                m.setFileDetail(new FileDetail(gridFSFile.getLength(), gridFSFile.getFilename(), gridFSFile.getMetadata().getString("_contentType")));
+            }
+        });
         Collections.reverse(messageDOS);
         return messageDOS;
     }

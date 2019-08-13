@@ -1,3 +1,5 @@
+import org.apache.commons.lang3.StringUtils;
+
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -37,5 +39,8 @@ public class Test {
         List<Integer> list2 = list.stream().filter(i -> i < 3).collect(Collectors.toList());
         System.out.println(list);
         System.out.println(list2);
+        String s = "阿里巴巴Java开发手册.pdf";
+        System.out.println(s.substring(s.lastIndexOf(".")));
+        System.out.println( StringUtils.substringAfter(s, "."));
     }
 }
