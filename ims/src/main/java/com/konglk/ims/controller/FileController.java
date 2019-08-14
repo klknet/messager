@@ -107,7 +107,6 @@ public class FileController {
     /**
      * 文件上传，支持断点续传
      * @param id
-     * @param fileName
      * @param file
      * @param request
      * @param response
@@ -115,20 +114,30 @@ public class FileController {
      */
     @PostMapping("/upload")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void uploadFile(@RequestParam String id, @RequestParam String fileName, MultipartFile file, HttpServletRequest request, HttpServletResponse response) throws Exception {
+    public void uploadFile(@RequestParam String id, MultipartFile file, HttpServletRequest request, HttpServletResponse response) throws Exception {
+        RandomAccessFile randomAccessFile = null;
         try {
             String rangeHeader = request.getHeader(HttpHeaders.RANGE);
             //大文件支持断点上传
             byte[] bytes = file.getBytes();
+            String fileName = file.getOriginalFilename();
             StringUtils.substringAfter(fileName, ".");
-            File writeFile = new File(request.getServletContext().getRealPath("/")+id+fileName.substring(fileName.lastIndexOf(".")));
-            RandomAccessFile randomAccessFile = new RandomAccessFile(writeFile, "rw");
+            File tmpDir = new File(request.getServletContext().getRealPath("/tmp/"));
+            if (!tmpDir.exists()) {
+                tmpDir.mkdir();
+            }
+            File writeFile = new File(tmpDir, id + fileName.substring(fileName.lastIndexOf(".")));
+            randomAccessFile = new RandomAccessFile(writeFile, "rw");
             randomAccessFile.seek(Long.valueOf(rangeHeader.split("=")[1].split("-")[0]));
             randomAccessFile.write(bytes);
             response.setHeader(HttpHeaders.CONTENT_RANGE, "bytes="+randomAccessFile.length());
             randomAccessFile.close();
         } catch (InvalidPathException e) {
+            logger.error(e.getMessage(), e);
             response.setStatus(HttpStatus.BAD_REQUEST.value());
+        } finally {
+            if (randomAccessFile != null)
+                randomAccessFile.close();
         }
     }
 
@@ -142,21 +151,23 @@ public class FileController {
     @PostMapping("/uploadDone")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void uploadDone(@RequestParam String id, @RequestParam String fileName, @RequestBody MessageDO messageDO, HttpServletRequest request) {
+        final String tmpDir = request.getServletContext().getRealPath("/tmp/");
         executor.submit(() -> {
             try {
-                Path path = Paths.get(request.getServletContext().getRealPath("/") + id + fileName.substring(fileName.lastIndexOf(".")));
+                logger.info("{} - upload done", fileName);
+                Path path = Paths.get(tmpDir + id + fileName.substring(fileName.lastIndexOf(".")));
                 File file = path.toFile();
                 FileInputStream in = new FileInputStream(file);
                 String contentType = Files.probeContentType(path);
                 ObjectId objectId = gridFsTemplate.store(in, fileName, contentType);
-                in.close();
                 messageDO.setContent(objectId.toString());
                 GridFSFile gridFSFile = gridFsTemplate.findOne(Query.query(Criteria.where("_id").is(objectId)));
                 messageDO.setFileDetail(new FileDetail(gridFSFile.getLength(), gridFSFile.getFilename(),
                         gridFSFile.getMetadata()==null?"":gridFSFile.getMetadata().getString("_contentType")));
                 producer.send(JSON.toJSONString(messageDO), messageDO.getConversationId());
+                in.close();
                 file.delete();
-            } catch (IOException e) {
+            } catch (Exception e) {
                 logger.error(e.getMessage(), e);
             }
         });
