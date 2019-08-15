@@ -111,4 +111,16 @@ public class RedisCacheService {
             return null;
         return JSON.parseObject(data.toString(), FileMeta.class);
     }
+
+    /**
+     * 拿到消费此条消息的凭证
+     * @param messageId
+     * @return
+     */
+    public Boolean isConsumeMessage(String messageId) {
+        String key = Constants.MESSAGE_HOLDER+":"+messageId;
+        Boolean res = redisTemplate.opsForValue().setIfAbsent(key, "0");
+        redisTemplate.expire(key, 8, TimeUnit.SECONDS);
+        return res;
+    }
 }

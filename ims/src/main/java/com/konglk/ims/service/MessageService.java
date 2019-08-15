@@ -9,6 +9,7 @@ import com.konglk.ims.event.ResponseEvent;
 import com.konglk.ims.model.FileDetail;
 import com.konglk.ims.repo.IMessageRepository;
 import com.konglk.ims.util.SpringUtils;
+import com.konglk.ims.ws.PresenceManager;
 import com.konglk.model.Response;
 import com.konglk.model.ResponseStatus;
 import com.mongodb.client.gridfs.model.GridFSFile;
@@ -46,6 +47,8 @@ public class MessageService {
     private IMessageRepository messageRepository;
     @Autowired
     private GridFsTemplate gridFsTemplate;
+    @Autowired
+    private PresenceManager presenceManager;
 
     public List<MessageDO> prevMessages(String cid, String userId, Date createtime, boolean include) {
         Query query = new Query();
@@ -193,15 +196,21 @@ public class MessageService {
         if (message != null) {
             if(new Integer(0).equals(message.getChatType())) {
                 //消息发送自己和对方
-                ResponseEvent event = new ResponseEvent(response, message.getUserId());
-                springUtils.getApplicationContext().publishEvent(event);
-                event = new ResponseEvent(response, message.getDestId());
-                springUtils.getApplicationContext().publishEvent(event);
+                if (presenceManager.existsUser(message.getUserId())) {
+                    ResponseEvent event = new ResponseEvent(response, message.getUserId());
+                    springUtils.getApplicationContext().publishEvent(event);
+                }
+                if (presenceManager.existsUser(message.getDestId())) {
+                    ResponseEvent event = new ResponseEvent(response, message.getDestId());
+                    springUtils.getApplicationContext().publishEvent(event);
+                }
             }else if (new Integer(1).equals(message.getChatType())) {
                 GroupChatDO groupChat = conversationService.findGroupChat(message.getDestId());
                 groupChat.getMembers().forEach(m -> {
-                    ResponseEvent event = new ResponseEvent(response, m.getUserId());
-                    springUtils.getApplicationContext().publishEvent(event);
+                    if (presenceManager.existsUser(m.getUserId())) {
+                        ResponseEvent event = new ResponseEvent(response, m.getUserId());
+                        springUtils.getApplicationContext().publishEvent(event);
+                    }
                 });
             }
         }

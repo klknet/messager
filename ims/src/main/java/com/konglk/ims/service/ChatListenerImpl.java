@@ -51,14 +51,17 @@ public class ChatListenerImpl implements MessageListener {
             try {
                 text = textMessage.getText();
                 messageDO = JSON.parseObject(text, MessageDO.class);
-                if (messageDO.getChatType() == 0 &&!presenceManager.existsUser(messageDO.getDestId())) {
-                    return;
-                }
-                //确保消息只被消费一次
-                if (!messageService.existsByMsgId(messageDO.getMessageId())) {
+                final MessageDO m = messageDO;
+                final String t = text;
+                //确保消息只被存库一次，未读消息只增加一次
+                if (redisCacheService.isConsumeMessage(messageDO.getMessageId())) {
                     messageService.insert(messageDO);
                     conversationService.updateConversation(messageDO);
+                    //未读消息+1
+                    executor.submit(()->incrementUnread(m));
                 }
+                //消息处理事件
+                executor.submit(()->messageService.notifyAll(m, new Response(ResponseStatus.M_TRANSFER_MESSAGE, Response.MESSAGE, t)));
             }catch(JMSException jms) {
                 logger.error(jms.getMessage(), jms);
             } catch (Exception e) {
@@ -71,12 +74,6 @@ public class ChatListenerImpl implements MessageListener {
                     messageService.failedMessage(msg);
                 }
             }
-            final MessageDO m = messageDO;
-            final String t = text;
-            //未读消息+1
-            executor.submit(()->incrementUnread(m));
-            //消息处理事件
-            executor.submit(()->messageService.notifyAll(m, new Response(ResponseStatus.M_TRANSFER_MESSAGE, Response.MESSAGE, t)));
         }
     }
 
