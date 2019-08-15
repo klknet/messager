@@ -2,9 +2,9 @@ package com.konglk.ims.controller;
 
 import com.konglk.ims.domain.UserDO;
 import com.konglk.ims.event.ResponseEvent;
+import com.konglk.ims.event.TopicProducer;
 import com.konglk.ims.service.ConversationService;
 import com.konglk.ims.service.UserService;
-import com.konglk.ims.util.SpringUtils;
 import com.konglk.ims.ws.PresenceManager;
 import com.konglk.model.Response;
 import org.apache.commons.lang3.StringUtils;
@@ -26,7 +26,7 @@ public class UserController {
     @Autowired
     private ConversationService conversationService;
     @Autowired
-    private SpringUtils springUtils;
+    private TopicProducer topicProducer;
 
     @PostMapping({"/add"})
     public void addUser(@RequestBody UserDO userDO) {
@@ -68,7 +68,7 @@ public class UserController {
         conversationService.updateConversationName(userId, destId, notename);
         ResponseEvent event =
                 new ResponseEvent(new Response(com.konglk.model.ResponseStatus.U_UPDATE_NOTENAME, Response.USER), userId);
-        springUtils.getApplicationContext().publishEvent(event);
+        topicProducer.sendNotifyMessage(event);
     }
 
     @PostMapping("/updateAvatar")

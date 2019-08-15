@@ -2,14 +2,12 @@ package com.konglk.ims.service;
 
 import com.konglk.ims.domain.FriendDO;
 import com.konglk.ims.domain.UserDO;
-
-import java.io.IOException;
-import java.util.*;
-import java.util.stream.Collectors;
-
+import com.konglk.ims.event.ResponseEvent;
+import com.konglk.ims.event.TopicProducer;
 import com.konglk.ims.util.EncryptUtil;
-import com.konglk.ims.ws.ChatEndPoint;
 import com.konglk.ims.ws.PresenceManager;
+import com.konglk.model.Response;
+import com.konglk.model.ResponseStatus;
 import com.konglk.model.UserPO;
 import com.mongodb.BasicDBObject;
 import com.mongodb.BasicDBObjectBuilder;
@@ -37,6 +35,13 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.util.DigestUtils;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+import java.util.Date;
+import java.util.List;
+import java.util.Random;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
 @Service
 public class UserService {
     private Logger logger = LoggerFactory.getLogger(getClass());
@@ -49,11 +54,11 @@ public class UserService {
     @Value("${host}")
     private String host;
     @Autowired
-    private ReplyService replyService;
-    @Autowired
     private GridFsTemplate gridFsTemplate;
     @Autowired
     private ConversationService conversationService;
+    @Autowired
+    private TopicProducer topicProducer;
 
 
     public UserDO login(String unique, String pwd) {
@@ -71,10 +76,7 @@ public class UserService {
         if (StringUtils.equals(raw, userDO.getRawPwd())) {
             String ticket = presenceManager.getTicket(userDO.getUserId());
             if(StringUtils.isNotEmpty(ticket)) {
-                ChatEndPoint client = presenceManager.getClient(userDO.getUserId());
-                if (client != null) {
-                    replyService.replyKickout(client);
-                }
+                topicProducer.sendNotifyMessage(new ResponseEvent(new Response(ResponseStatus.U_KICK_OUT, Response.USER), userDO.getUserId()));
             }
             //登录凭证
             ticket = UUID.randomUUID().toString();

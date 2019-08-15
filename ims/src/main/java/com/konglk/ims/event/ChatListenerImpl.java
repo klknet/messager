@@ -1,10 +1,12 @@
-package com.konglk.ims.service;
+package com.konglk.ims.event;
 
 import com.alibaba.fastjson.JSON;
 import com.konglk.ims.cache.RedisCacheService;
 import com.konglk.ims.domain.FailedMessageDO;
 import com.konglk.ims.domain.GroupChatDO;
 import com.konglk.ims.domain.MessageDO;
+import com.konglk.ims.service.ConversationService;
+import com.konglk.ims.service.MessageService;
 import com.konglk.ims.ws.PresenceManager;
 import com.konglk.model.Response;
 import com.konglk.model.ResponseStatus;
@@ -25,6 +27,7 @@ import java.util.stream.Collectors;
 
 /**
  * Created by konglk on 2019/4/20.
+ * 接收聊天消息
  */
 @Service
 public class ChatListenerImpl implements MessageListener {

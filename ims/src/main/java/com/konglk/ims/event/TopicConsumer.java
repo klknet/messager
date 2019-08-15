@@ -1,12 +1,13 @@
-package com.konglk.ims.service;
+package com.konglk.ims.event;
 
+import com.konglk.ims.service.TopicNameManager;
 import org.apache.activemq.jms.pool.PooledConnectionFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.annotation.Resource;
 import javax.jms.*;
@@ -15,7 +16,7 @@ import javax.jms.*;
  * Created by konglk on 2019/4/20.
  */
 @Service
-public class TopicConsumer implements InitializingBean {
+public class TopicConsumer {
 
     private Logger logger = LoggerFactory.getLogger(getClass());
     @Resource(name = "amqFactory")
@@ -23,9 +24,12 @@ public class TopicConsumer implements InitializingBean {
     @Autowired
     private ChatListenerImpl chatListner;
     @Autowired
-    private RandomTopicName randomTopicName;
+    private NotifyListenerImpl notifyListener;
+    @Autowired
+    private TopicNameManager topicNameManager;
     private TopicConnection connection;
 
+    @PostConstruct
     public void consume() {
         try {
             start();
@@ -34,10 +38,11 @@ public class TopicConsumer implements InitializingBean {
         }
     }
 
-    private void start() throws JMSException {
-        String[] names = randomTopicName.topics();
+    public void start() throws JMSException {
+        String[] names = topicNameManager.topics();
         connection = factory.createTopicConnection();
         connection.start();
+        //聊天消息topic
         for(int i=0; i<names.length; i++) {
             TopicSession session = connection.createTopicSession(false, Session.AUTO_ACKNOWLEDGE);
             Topic topic = session.createTopic(names[i]);
@@ -45,6 +50,12 @@ public class TopicConsumer implements InitializingBean {
             consumer.setMessageListener(chatListner);
             logger.info("consumer ready for {}", names[i]);
         }
+        //通知类topic
+        TopicSession session = connection.createTopicSession(false, Session.AUTO_ACKNOWLEDGE);
+        Topic topic = session.createTopic(topicNameManager.getNotifyName());
+        MessageConsumer consumer = session.createConsumer(topic);
+        consumer.setMessageListener(notifyListener);
+        logger.info("consumer ready for {}", topicNameManager.getNotifyName());
     }
 
     @PreDestroy
@@ -59,8 +70,4 @@ public class TopicConsumer implements InitializingBean {
         }
     }
 
-    @Override
-    public void afterPropertiesSet() throws Exception {
-        consume();
-    }
 }

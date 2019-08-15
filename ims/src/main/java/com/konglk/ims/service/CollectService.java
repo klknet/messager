@@ -7,7 +7,6 @@ import com.mongodb.client.gridfs.model.GridFSFile;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.gridfs.GridFsTemplate;
@@ -23,8 +22,6 @@ public class CollectService {
 
     @Autowired
     private GridFsTemplate gridFsTemplate;
-    @Autowired
-    private MongoTemplate mongoTemplate;
     @Autowired
     private ICollectRepository collectRepository;
     @Autowired

@@ -4,7 +4,7 @@ import com.konglk.ims.domain.FriendDO;
 import com.konglk.ims.domain.FriendRequestDO;
 import com.konglk.ims.domain.UserDO;
 import com.konglk.ims.event.ResponseEvent;
-import com.konglk.ims.util.SpringUtils;
+import com.konglk.ims.event.TopicProducer;
 import com.konglk.model.Response;
 import com.konglk.model.ResponseStatus;
 import org.slf4j.Logger;
@@ -32,7 +32,7 @@ public class RelationService {
     @Autowired
     private UserService userService;
     @Autowired
-    private SpringUtils springUtils;
+    private TopicProducer topicProducer;
 
     /*
     请求添加朋友
@@ -60,7 +60,7 @@ public class RelationService {
         logger.info("{} add friend request to {}", userDO.getNickname(), destId);
 
         ResponseEvent event = new ResponseEvent(new Response(ResponseStatus.U_FRIEND_REQUEST, Response.USER), destId);
-        springUtils.getApplicationContext().publishEvent(event);
+        topicProducer.sendNotifyMessage(event);
     }
 
     /**
@@ -77,7 +77,7 @@ public class RelationService {
         logger.info("{} agree friend request of {}", friendRequestDO.getDestId(), friendRequestDO.getUserId());
         //通知客户端刷新朋友列表
         ResponseEvent event = new ResponseEvent(new Response(ResponseStatus.U_AGREE_FRIEND_REQUEST, Response.USER), friendRequestDO.getUserId());
-        springUtils.getApplicationContext().publishEvent(event);
+        topicProducer.sendNotifyMessage(event);
 
     }
 

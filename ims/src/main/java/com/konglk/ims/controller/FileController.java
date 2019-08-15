@@ -5,7 +5,7 @@ import com.konglk.ims.cache.RedisCacheService;
 import com.konglk.ims.domain.MessageDO;
 import com.konglk.ims.model.FileDetail;
 import com.konglk.ims.model.FileMeta;
-import com.konglk.ims.service.ChatProducer;
+import com.konglk.ims.event.TopicProducer;
 import com.mongodb.client.gridfs.GridFSBucket;
 import com.mongodb.client.gridfs.GridFSBuckets;
 import com.mongodb.client.gridfs.model.GridFSFile;
@@ -22,19 +22,13 @@ import org.springframework.data.mongodb.gridfs.GridFsTemplate;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
-import org.springframework.util.MimeType;
-import org.springframework.util.MimeTypeUtils;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import javax.servlet.ServletInputStream;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.Part;
 import java.io.*;
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.net.URLEncoder;
 import java.nio.file.*;
 
@@ -54,7 +48,7 @@ public class FileController {
     @Autowired
     private ThreadPoolTaskExecutor executor;
     @Autowired
-    private ChatProducer producer;
+    private TopicProducer producer;
 
     private Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -164,7 +158,7 @@ public class FileController {
                 GridFSFile gridFSFile = gridFsTemplate.findOne(Query.query(Criteria.where("_id").is(objectId)));
                 messageDO.setFileDetail(new FileDetail(gridFSFile.getLength(), gridFSFile.getFilename(),
                         gridFSFile.getMetadata()==null?"":gridFSFile.getMetadata().getString("_contentType")));
-                producer.send(JSON.toJSONString(messageDO), messageDO.getConversationId());
+                producer.sendChatMessage(JSON.toJSONString(messageDO), messageDO.getConversationId());
                 in.close();
                 file.delete();
             } catch (Exception e) {

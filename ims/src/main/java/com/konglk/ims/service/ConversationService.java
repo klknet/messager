@@ -4,7 +4,7 @@ import com.konglk.ims.cache.RedisCacheService;
 import com.konglk.ims.comparator.ConversationComparator;
 import com.konglk.ims.domain.*;
 import com.konglk.ims.event.ResponseEvent;
-import com.konglk.ims.util.SpringUtils;
+import com.konglk.ims.event.TopicProducer;
 import com.konglk.ims.util.SudokuGenerator;
 import com.konglk.model.Response;
 import com.mongodb.BasicDBObject;
@@ -50,9 +50,9 @@ public class ConversationService {
     @Autowired
     private GridFsTemplate gridFsTemplate;
     @Autowired
-    private SpringUtils springUtils;
-    @Autowired
     private RedisCacheService cacheService;
+    @Autowired
+    private TopicProducer topicProducer;
 
     @Value("${host}")
     String host;
@@ -330,7 +330,7 @@ public class ConversationService {
             //通知群聊会话已创建
             Response response = new Response(U_GROUP_CHAT, Response.USER);
             ResponseEvent event = new ResponseEvent(response, uId);
-            springUtils.getApplicationContext().publishEvent(event);
+            topicProducer.sendNotifyMessage(event);
         }
     }
 

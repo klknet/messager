@@ -46,11 +46,5 @@ public class ReplyService {
         reply(client, new Response(200, null, "pong", Response.HEART));
     }
 
-    /*
-    账号踢出消息
-     */
-    public void replyKickout(ChatEndPoint client) {
-        reply(client,new Response(ResponseStatus.U_KICK_OUT, Response.USER));
-    }
 
 }

@@ -1,11 +1,11 @@
 package com.konglk.ims.service;
 
 import com.alibaba.fastjson.JSON;
-import com.konglk.ims.cache.RedisCacheService;
 import com.konglk.ims.domain.FailedMessageDO;
 import com.konglk.ims.domain.GroupChatDO;
 import com.konglk.ims.domain.MessageDO;
 import com.konglk.ims.event.ResponseEvent;
+import com.konglk.ims.event.TopicProducer;
 import com.konglk.ims.model.FileDetail;
 import com.konglk.ims.repo.IMessageRepository;
 import com.konglk.ims.util.SpringUtils;
@@ -38,17 +38,15 @@ public class MessageService {
     @Autowired
     private ConversationService conversationService;
     @Autowired
-    private RedisCacheService cacheService;
-    @Autowired
     private SpringUtils springUtils;
-    @Autowired
-    private UserService userService;
     @Autowired
     private IMessageRepository messageRepository;
     @Autowired
     private GridFsTemplate gridFsTemplate;
     @Autowired
     private PresenceManager presenceManager;
+    @Autowired
+    private TopicProducer topicProducer;
 
     public List<MessageDO> prevMessages(String cid, String userId, Date createtime, boolean include) {
         Query query = new Query();
@@ -165,7 +163,7 @@ public class MessageService {
                 conversationService.updateLastTime(messageDO.getConversationId(), userId, preMsg.getCreateTime(), preMsg.getType(), preMsg.getContent());
             }else
                 conversationService.updateLastTime(messageDO.getConversationId(), userId, null, 0, "");
-            springUtils.getApplicationContext().publishEvent(new ResponseEvent(
+            topicProducer.sendNotifyMessage(new ResponseEvent(
                     new Response(
                             ResponseStatus.M_UPDATE_CONVERSATION,
                             Response.MESSAGE,
@@ -181,10 +179,9 @@ public class MessageService {
         }else {
             //删除对方的消息
             addToDeleteList(msgId, userId);
-            springUtils.getApplicationContext()
-                    .publishEvent(new ResponseEvent(
-                            new Response(ResponseStatus.M_DELETE_MESSAGE, Response.MESSAGE, JSON.toJSONString(messageDO)),
-                            userId));
+            topicProducer.sendNotifyMessage(new ResponseEvent(
+                    new Response(ResponseStatus.M_DELETE_MESSAGE, Response.MESSAGE, JSON.toJSONString(messageDO)),
+                    userId));
         }
     }
 
