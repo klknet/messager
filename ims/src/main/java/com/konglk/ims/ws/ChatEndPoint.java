@@ -24,12 +24,12 @@ public class ChatEndPoint {
 
     private Session session;
     private MessageHandler messageHandler;
-    private ConnectionHolder connectionHolder;
+    private PresenceManager presenceManager;
 
     public ChatEndPoint() {
         this.nickname = ("client:" + connectionIds.getAndIncrement());
         this.messageHandler = SpringUtils.getBeanObj(MessageHandler.class);
-        this.connectionHolder = SpringUtils.getBeanObj(ConnectionHolder.class);
+        this.presenceManager = SpringUtils.getBeanObj(PresenceManager.class);
     }
 
     @OnOpen
@@ -57,7 +57,7 @@ public class ChatEndPoint {
 
     @OnClose
     public void close() {
-        connectionHolder.removeClient(this.userId);
+        presenceManager.removeClient(this.userId);
         logger.info("client {} leaves", this.nickname);
     }
 
@@ -104,7 +104,7 @@ public class ChatEndPoint {
         this.messageHandler = messageHandler;
     }
 
-    public void setConnectionHolder(ConnectionHolder connectionHolder) {
-        this.connectionHolder = connectionHolder;
+    public void setPresenceManager(PresenceManager presenceManager) {
+        this.presenceManager = presenceManager;
     }
 }

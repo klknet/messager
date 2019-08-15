@@ -10,6 +10,7 @@ import org.springframework.data.redis.connection.RedisConnection;
 import org.springframework.data.redis.core.RedisCallback;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 
 import java.util.Calendar;
 import java.util.List;
@@ -65,6 +66,8 @@ public class RedisCacheService {
     批量未读消息
      */
     public void incUnreadNum(List<String> userIds, String id, long delta) {
+        if (CollectionUtils.isEmpty(userIds))
+            return;
         redisTemplate.executePipelined(new RedisCallback<Object>() {
             @Override
             public Object doInRedis(RedisConnection connection) throws DataAccessException {

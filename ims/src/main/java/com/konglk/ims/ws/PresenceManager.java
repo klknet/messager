@@ -9,8 +9,8 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Component
-public class ConnectionHolder {
-    private static final Map<String, ChatEndPoint> clientMap = new ConcurrentHashMap(100);
+public class PresenceManager {
+    private final Map<String, ChatEndPoint> clientMap = new ConcurrentHashMap(256);
 
     @Autowired
     private RedisCacheService cacheService;
@@ -28,8 +28,11 @@ public class ConnectionHolder {
             clientMap.remove(userId);
     }
 
+    public boolean existsUser(String userId) {
+        return clientMap.containsKey(userId);
+    }
+
     public void addTicket(String userId, String ticket) {
-//        ticketMap.put(key, ticket);
         if(StringUtils.isNotEmpty(userId))
             cacheService.setUserTicket(userId, ticket);
     }

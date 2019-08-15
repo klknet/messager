@@ -4,7 +4,7 @@ import com.alibaba.fastjson.JSON;
 import com.konglk.ims.service.NotifyService;
 import com.konglk.ims.service.ReplyService;
 import com.konglk.ims.ws.ChatEndPoint;
-import com.konglk.ims.ws.ConnectionHolder;
+import com.konglk.ims.ws.PresenceManager;
 import com.konglk.model.Response;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationListener;
@@ -17,7 +17,7 @@ import org.springframework.stereotype.Component;
 public class ResponseEventListener implements ApplicationListener<ResponseEvent> {
 
     @Autowired
-    private ConnectionHolder connectionHolder;
+    private PresenceManager presenceManager;
     @Autowired
     private ReplyService replyService;
     @Autowired
@@ -30,8 +30,8 @@ public class ResponseEventListener implements ApplicationListener<ResponseEvent>
             String userId = event.getUserId();
             if(userId != null) {
                 //在线用户直接推送消息
-                if(connectionHolder.getClient(userId) != null) {
-                    ChatEndPoint client = connectionHolder.getClient(userId);
+                if(presenceManager.getClient(userId) != null) {
+                    ChatEndPoint client = presenceManager.getClient(userId);
                     replyService.reply(client, response);
                 }else {
                     //离线用户将数据存入db，等用户上线后再推送。

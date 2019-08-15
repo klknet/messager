@@ -5,7 +5,7 @@ import com.konglk.ims.event.ResponseEvent;
 import com.konglk.ims.service.ConversationService;
 import com.konglk.ims.service.UserService;
 import com.konglk.ims.util.SpringUtils;
-import com.konglk.ims.ws.ConnectionHolder;
+import com.konglk.ims.ws.PresenceManager;
 import com.konglk.model.Response;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,7 +22,7 @@ public class UserController {
     @Autowired
     private UserService userService;
     @Autowired
-    private ConnectionHolder connectionHolder;
+    private PresenceManager presenceManager;
     @Autowired
     private ConversationService conversationService;
     @Autowired
@@ -58,7 +58,7 @@ public class UserController {
     @DeleteMapping("/delTicket")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delTicket(String userId) {
-        connectionHolder.removeTicket(userId);
+        presenceManager.removeTicket(userId);
     }
 
     @PutMapping("/setNotename")

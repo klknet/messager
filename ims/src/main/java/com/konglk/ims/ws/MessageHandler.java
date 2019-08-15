@@ -6,12 +6,9 @@ import com.konglk.ims.service.ChatProducer;
 import com.konglk.ims.service.ReplyService;
 import com.konglk.ims.service.UserService;
 import com.konglk.model.Authentication;
-import com.konglk.model.ResponseStatus;
 import com.konglk.model.Request;
-import com.konglk.model.Response;
 
 import java.io.IOException;
-import java.util.UUID;
 
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -29,7 +26,7 @@ public class MessageHandler {
     @Autowired
     private ChatProducer producer;
     @Autowired
-    private ConnectionHolder connectionHolder;
+    private PresenceManager presenceManager;
     @Autowired
     private ReplyService replyService;
 
@@ -41,7 +38,7 @@ public class MessageHandler {
                 break;
             case 1:
                 Authentication authentication = JSON.parseObject(request.getData(), Authentication.class);
-                String ticket = connectionHolder.getTicket(authentication.getUserId());
+                String ticket = presenceManager.getTicket(authentication.getUserId());
                 if (StringUtils.isEmpty(authentication.getUserId())) {
                     client.getSession().close();
                 }
@@ -50,7 +47,7 @@ public class MessageHandler {
                     client.setUserId(authentication.getUserId());
                     client.setTicket(ticket);
                     client.setAuth(true);
-                    connectionHolder.addClient(authentication.getUserId(), client);
+                    presenceManager.addClient(authentication.getUserId(), client);
                     replyService.replyOK(client);
                 }else {
                     replyService.replyTicketError(client);

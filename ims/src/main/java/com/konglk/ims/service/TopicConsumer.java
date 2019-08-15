@@ -7,7 +7,6 @@ import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.annotation.Resource;
 import javax.jms.*;
@@ -16,7 +15,7 @@ import javax.jms.*;
  * Created by konglk on 2019/4/20.
  */
 @Service
-public class QueueConsumer implements InitializingBean {
+public class TopicConsumer implements InitializingBean {
 
     private Logger logger = LoggerFactory.getLogger(getClass());
     @Resource(name = "amqFactory")
@@ -24,8 +23,8 @@ public class QueueConsumer implements InitializingBean {
     @Autowired
     private ChatListenerImpl chatListner;
     @Autowired
-    private RandomQueueName randomQueueName;
-    private QueueConnection connection;
+    private RandomTopicName randomTopicName;
+    private TopicConnection connection;
 
     public void consume() {
         try {
@@ -36,13 +35,13 @@ public class QueueConsumer implements InitializingBean {
     }
 
     private void start() throws JMSException {
-        String[] names = randomQueueName.queues();
-        connection = factory.createQueueConnection();
+        String[] names = randomTopicName.topics();
+        connection = factory.createTopicConnection();
         connection.start();
         for(int i=0; i<names.length; i++) {
-            QueueSession session = connection.createQueueSession(false, Session.AUTO_ACKNOWLEDGE);
-            Queue queue = session.createQueue(names[i]);
-            MessageConsumer consumer = session.createConsumer(queue);
+            TopicSession session = connection.createTopicSession(false, Session.AUTO_ACKNOWLEDGE);
+            Topic topic = session.createTopic(names[i]);
+            MessageConsumer consumer = session.createConsumer(topic);
             consumer.setMessageListener(chatListner);
             logger.info("consumer ready for {}", names[i]);
         }

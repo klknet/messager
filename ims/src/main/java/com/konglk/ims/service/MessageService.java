@@ -7,6 +7,7 @@ import com.konglk.ims.domain.GroupChatDO;
 import com.konglk.ims.domain.MessageDO;
 import com.konglk.ims.event.ResponseEvent;
 import com.konglk.ims.model.FileDetail;
+import com.konglk.ims.repo.IMessageRepository;
 import com.konglk.ims.util.SpringUtils;
 import com.konglk.model.Response;
 import com.konglk.model.ResponseStatus;
@@ -42,6 +43,8 @@ public class MessageService {
     @Autowired
     private UserService userService;
     @Autowired
+    private IMessageRepository messageRepository;
+    @Autowired
     private GridFsTemplate gridFsTemplate;
 
     public List<MessageDO> prevMessages(String cid, String userId, Date createtime, boolean include) {
@@ -72,7 +75,7 @@ public class MessageService {
         mongoTemplate.insert(messageDO);
     }
 
-    public void failedMessge(FailedMessageDO msg) {
+    public void failedMessage(FailedMessageDO msg) {
         mongoTemplate.insert(msg);
     }
 
@@ -120,6 +123,11 @@ public class MessageService {
 
     public MessageDO findByMsgId(String msgId) {
         return mongoTemplate.findOne(Query.query(Criteria.where("messageId").is(msgId)), MessageDO.class);
+    }
+
+
+    public boolean existsByMsgId(String msgId) {
+        return messageRepository.existsByMessageId(msgId);
     }
 
     /**

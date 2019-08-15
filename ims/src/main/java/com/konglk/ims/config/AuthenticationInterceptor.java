@@ -1,7 +1,7 @@
 package com.konglk.ims.config;
 
 import com.konglk.ims.util.EncryptUtil;
-import com.konglk.ims.ws.ConnectionHolder;
+import com.konglk.ims.ws.PresenceManager;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,14 +19,14 @@ public class AuthenticationInterceptor implements HandlerInterceptor {
 //    private static final String TOKEN = "6c766178-4eef-11e9-89c1-40a3cc5c760e";
     private Logger logger = LoggerFactory.getLogger(getClass());
     @Autowired
-    private ConnectionHolder connectionHolder;
+    private PresenceManager presenceManager;
 
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler)
             throws Exception {
         String userId = EncryptUtil.decrypt(request.getHeader("userId"));
         String ticket = EncryptUtil.decrypt(request.getHeader("ticket"));
         if (StringUtils.isNotEmpty(userId) && StringUtils.isNotEmpty(ticket)
-                && ticket.equals(connectionHolder.getTicket(userId))) {
+                && ticket.equals(presenceManager.getTicket(userId))) {
             return true;
         }
         this.logger.info("verification failed, error token");

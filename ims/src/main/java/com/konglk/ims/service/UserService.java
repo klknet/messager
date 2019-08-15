@@ -2,20 +2,17 @@ package com.konglk.ims.service;
 
 import com.konglk.ims.domain.FriendDO;
 import com.konglk.ims.domain.UserDO;
-import com.konglk.ims.util.DecodeUtils;
 
 import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
 import com.konglk.ims.util.EncryptUtil;
-import com.konglk.ims.util.NameRandomUtil;
 import com.konglk.ims.ws.ChatEndPoint;
-import com.konglk.ims.ws.ConnectionHolder;
+import com.konglk.ims.ws.PresenceManager;
 import com.konglk.model.UserPO;
 import com.mongodb.BasicDBObject;
 import com.mongodb.BasicDBObjectBuilder;
-import org.apache.catalina.User;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
 import org.bson.types.ObjectId;
@@ -24,7 +21,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -49,7 +45,7 @@ public class UserService {
     @Autowired
     private MongoTemplate mongoTemplate;
     @Autowired
-    private ConnectionHolder connectionHolder;
+    private PresenceManager presenceManager;
     @Value("${host}")
     private String host;
     @Autowired
@@ -73,16 +69,16 @@ public class UserService {
         }
         raw = DigestUtils.md5DigestAsHex((raw + userDO.getSalt()).getBytes());
         if (StringUtils.equals(raw, userDO.getRawPwd())) {
-            String ticket = connectionHolder.getTicket(userDO.getUserId());
+            String ticket = presenceManager.getTicket(userDO.getUserId());
             if(StringUtils.isNotEmpty(ticket)) {
-                ChatEndPoint client = connectionHolder.getClient(userDO.getUserId());
+                ChatEndPoint client = presenceManager.getClient(userDO.getUserId());
                 if (client != null) {
                     replyService.replyKickout(client);
                 }
             }
             //登录凭证
             ticket = UUID.randomUUID().toString();
-            connectionHolder.addTicket(userDO.getUserId(), ticket);
+            presenceManager.addTicket(userDO.getUserId(), ticket);
             userDO.setTicket(ticket);
             eraseSensitive(userDO);
             return userDO;
@@ -233,7 +229,7 @@ public class UserService {
     public UserDO findByUserId(String userId) {
         Query query = new Query(Criteria.where("userId").is(userId));
         UserDO userDO = mongoTemplate.findOne(query, UserDO.class);
-        userDO.setTicket(connectionHolder.getTicket(userId));
+        userDO.setTicket(presenceManager.getTicket(userId));
         return userDO;
     }
 
