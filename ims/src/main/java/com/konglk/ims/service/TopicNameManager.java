@@ -14,8 +14,8 @@ public class TopicNameManager {
     private int topicNum = 3;
     private String chatPrd = "topic_ims_chat_";
     private String chatDev = "topic_ims_chat_dev_";
-    private String notifyPrd = "topic_ims_notify_";
-    private String notifyDev = "topic_ims_notify_";
+    private String notifyPrd = "topic_ims_notify";
+    private String notifyDev = "topic_ims_notify_dev";
 
     @Autowired
     private SpringUtils springUtils;
