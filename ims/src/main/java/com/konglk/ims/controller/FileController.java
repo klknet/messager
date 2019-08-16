@@ -153,6 +153,9 @@ public class FileController {
                 File file = path.toFile();
                 FileInputStream in = new FileInputStream(file);
                 String contentType = Files.probeContentType(path);
+                if (StringUtils.isEmpty(contentType)) {
+                    contentType = "application/octet-stream";
+                }
                 ObjectId objectId = gridFsTemplate.store(in, fileName, contentType);
                 messageDO.setContent(objectId.toString());
                 GridFSFile gridFSFile = gridFsTemplate.findOne(Query.query(Criteria.where("_id").is(objectId)));

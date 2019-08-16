@@ -1,5 +1,6 @@
 package com.konglk.ims.event;
 
+import com.konglk.model.Response;
 import org.springframework.context.ApplicationEvent;
 
 import java.util.List;
@@ -10,9 +11,11 @@ import java.util.List;
 public class ResponseEvent extends ApplicationEvent {
 
     private String userId;
+    private Response source;
 
-    public ResponseEvent(Object source, String userId) {
+    public ResponseEvent(Response source, String userId) {
         super(source);
+        this.source = source;
         this.userId = userId;
     }
 
@@ -22,5 +25,14 @@ public class ResponseEvent extends ApplicationEvent {
 
     public void setUserId(String userId) {
         this.userId = userId;
+    }
+
+    @Override
+    public Object getSource() {
+        return source;
+    }
+
+    public void setSource(Response source) {
+        this.source = source;
     }
 }

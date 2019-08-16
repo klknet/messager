@@ -1,9 +1,11 @@
 package com.konglk.model;
 
+import java.io.Serializable;
+
 /**
  * Created by konglk on 2019/3/27.
  */
-public class Response {
+public class Response implements Serializable {
 
     public static int HEART = 0;
     public static int USER = 1;
