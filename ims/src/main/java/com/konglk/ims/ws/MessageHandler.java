@@ -32,29 +32,11 @@ public class MessageHandler {
             case 0:
                 replyService.replyPong(client);
                 break;
-            case 1:
-                Authentication authentication = JSON.parseObject(request.getData(), Authentication.class);
-                String ticket = presenceManager.getTicket(authentication.getUserId());
-                if (StringUtils.isEmpty(authentication.getUserId())) {
-                    client.getSession().close();
-                }
-                if (StringUtils.isNotEmpty(request.getTicket()) &&
-                        StringUtils.equals(ticket, request.getTicket())){
-                    client.setUserId(authentication.getUserId());
-                    client.setTicket(ticket);
-                    client.setAuth(true);
-                    presenceManager.addClient(authentication.getUserId(), client);
-                    replyService.replyOK(client);
-                }else {
-                    replyService.replyTicketError(client);
-                }
-                break;
             case 2:
                 MessageDO messageDO = JSON.parseObject(request.getData(), MessageDO.class);
                 if (StringUtils.isEmpty(messageDO.getContent()))
                     return;
-                if (StringUtils.isNotEmpty(request.getTicket()) && client.isAuth() &&
-                        StringUtils.equals(client.getTicket(), request.getTicket())){
+                if (client.isAuth()){
                     //消息发送到mq
                     producer.sendChatMessage(request.getData(), messageDO.getConversationId());
                 }else {

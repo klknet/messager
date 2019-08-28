@@ -1,16 +1,21 @@
 package com.konglk.ims.ws;
 
 import com.alibaba.fastjson.JSON;
+import com.konglk.ims.util.RegExpUtil;
 import com.konglk.ims.util.SpringUtils;
 import com.konglk.model.Request;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.websocket.*;
+import javax.websocket.server.PathParam;
 import javax.websocket.server.ServerEndpoint;
 import java.io.*;
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @ServerEndpoint(value = "/ws/chat")
 public class ChatEndPoint {
@@ -34,8 +39,31 @@ public class ChatEndPoint {
 
     @OnOpen
     public void connect(Session session) {
-        logger.info("new connection active {}", this.nickname);
+        String queryString = session.getQueryString();
+        boolean auth = false;
+        String userId = null, ticket = null;
+        if (StringUtils.isNotEmpty(queryString)) {
+            userId = RegExpUtil.getUrlParameter(queryString, "userId");
+            ticket = RegExpUtil.getUrlParameter(queryString, "ticket");
+            if (StringUtils.isNotEmpty(userId) || StringUtils.isNotEmpty(ticket) ||
+                    ticket.equals(presenceManager.getTicket(userId))) {
+                auth = true;
+            }
+        }
+        if (!auth) {
+            try {
+                session.close();
+            } catch (IOException e) {
+                logger.error(e.getMessage(), e);
+            }
+            return;
+        }
+        logger.info("new connection active {}, {}, {}", this.nickname, userId, ticket);
         this.session = session;
+        this.userId = userId;
+        this.ticket = ticket;
+        this.auth = true;
+        presenceManager.addClient(userId, this);
     }
 
     @OnMessage
@@ -64,7 +92,7 @@ public class ChatEndPoint {
     @OnError
     public void onError(Throwable t)
             throws Throwable {
-        logger.error("WebSocket error."+t.getMessage(), t);
+        logger.error("WebSocket error." + t.getMessage(), t);
         this.session.close();
     }
 
