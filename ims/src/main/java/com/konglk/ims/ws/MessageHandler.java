@@ -31,6 +31,7 @@ public class MessageHandler {
         switch (request.getType()) {
             case 0:
                 replyService.replyPong(client);
+                client.setTimestamp(System.currentTimeMillis());
                 break;
             case 2:
                 MessageDO messageDO = JSON.parseObject(request.getData(), MessageDO.class);

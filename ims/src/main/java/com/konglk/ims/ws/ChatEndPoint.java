@@ -26,6 +26,7 @@ public class ChatEndPoint {
     private String userId;
     private String ticket;
     private boolean auth;
+    private long timestamp;
 
     private Session session;
     private MessageHandler messageHandler;
@@ -35,6 +36,7 @@ public class ChatEndPoint {
         this.nickname = ("client:" + connectionIds.getAndIncrement());
         this.messageHandler = SpringUtils.getBeanObj(MessageHandler.class);
         this.presenceManager = SpringUtils.getBeanObj(PresenceManager.class);
+        this.timestamp = System.currentTimeMillis();
     }
 
     @OnOpen
@@ -134,5 +136,13 @@ public class ChatEndPoint {
 
     public void setPresenceManager(PresenceManager presenceManager) {
         this.presenceManager = presenceManager;
+    }
+
+    public long getTimestamp() {
+        return timestamp;
+    }
+
+    public void setTimestamp(long timestamp) {
+        this.timestamp = timestamp;
     }
 }

@@ -44,4 +44,8 @@ public class PresenceManager {
     public void removeTicket(String userId) {
         cacheService.delUserTicket(userId);
     }
+
+    public Map<String, ChatEndPoint> getClientMap() {
+        return clientMap;
+    }
 }
