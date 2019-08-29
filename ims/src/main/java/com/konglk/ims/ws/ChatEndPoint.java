@@ -9,13 +9,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.websocket.*;
-import javax.websocket.server.PathParam;
 import javax.websocket.server.ServerEndpoint;
-import java.io.*;
-import java.nio.ByteBuffer;
+import java.io.IOException;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 @ServerEndpoint(value = "/ws/chat")
 public class ChatEndPoint {
@@ -24,8 +20,8 @@ public class ChatEndPoint {
 
     private String nickname;
     private String userId;
-    private String ticket;
     private boolean auth;
+    private boolean dropDown;//是否挤出标志
     private long timestamp;
 
     private Session session;
@@ -53,18 +49,18 @@ public class ChatEndPoint {
             }
         }
         if (!auth) {
-            try {
-                session.close();
-            } catch (IOException e) {
-                logger.error(e.getMessage(), e);
-            }
+            release();
             return;
         }
-        logger.info("new connection active {}, {}, {}", this.nickname, userId, ticket);
+        logger.info("new connection active {}", this.nickname);
         this.session = session;
         this.userId = userId;
-        this.ticket = ticket;
         this.auth = true;
+        if (presenceManager.existsUser(userId)) {
+            ChatEndPoint endPoint = presenceManager.getClient(userId);
+            endPoint.setDropDown(true);
+            endPoint.release();
+        }
         presenceManager.addClient(userId, this);
     }
 
@@ -72,30 +68,32 @@ public class ChatEndPoint {
     public void incoming(String message)
             throws Exception {
         logger.debug(message);
-        Request request = (Request) JSON.parseObject(message, Request.class);
+        Request request = JSON.parseObject(message, Request.class);
         this.messageHandler.process(request, this);
     }
 
-    @OnMessage
-    public void incoming(ByteBuffer buffer) throws IOException {
-        logger.info("receive file");
-        RandomAccessFile out = new RandomAccessFile(new File("d:/tt"), "rw");
-        out.seek(out.length());
-        out.write(buffer.array());
-        out.close();
-    }
-
     @OnClose
-    public void close() {
-        presenceManager.removeClient(this.userId);
+    public void onClose() {
+        //对于被挤下去的用户，不要剔除在线模块
+        if (!dropDown) {
+            presenceManager.removeClient(this.userId);
+        }
         logger.info("client {} leaves", this.nickname);
     }
 
     @OnError
-    public void onError(Throwable t)
-            throws Throwable {
-        logger.error("WebSocket error." + t.getMessage(), t);
-        this.session.close();
+    public void onError(Throwable t) {
+        logger.error("WebSocket error. "+this.nickname, t);
+    }
+
+    public void release() {
+        if (this.session.isOpen()) {
+            try {
+                this.session.close();
+            } catch (IOException e) {
+                logger.error(e.getMessage(), e);
+            }
+        }
     }
 
     public String getUserId() {
@@ -106,20 +104,8 @@ public class ChatEndPoint {
         this.userId = userId;
     }
 
-    public String getTicket() {
-        return ticket;
-    }
-
-    public void setTicket(String ticket) {
-        this.ticket = ticket;
-    }
-
     public boolean isAuth() {
         return auth;
-    }
-
-    public void setAuth(boolean auth) {
-        this.auth = auth;
     }
 
     public String getNickname() {
@@ -144,5 +130,13 @@ public class ChatEndPoint {
 
     public void setTimestamp(long timestamp) {
         this.timestamp = timestamp;
+    }
+
+    public boolean isDropDown() {
+        return dropDown;
+    }
+
+    public void setDropDown(boolean dropDown) {
+        this.dropDown = dropDown;
     }
 }

@@ -7,7 +7,6 @@ import com.konglk.ims.domain.GroupChatDO;
 import com.konglk.ims.domain.MessageDO;
 import com.konglk.ims.service.ConversationService;
 import com.konglk.ims.service.MessageService;
-import com.konglk.ims.ws.PresenceManager;
 import com.konglk.model.Response;
 import com.konglk.model.ResponseStatus;
 import org.apache.activemq.command.ActiveMQTextMessage;
@@ -42,8 +41,6 @@ public class ChatListenerImpl implements MessageListener {
     private ThreadPoolTaskExecutor executor;
     @Autowired
     private RedisCacheService redisCacheService;
-    @Autowired
-    private PresenceManager presenceManager;
 
     @Override
     public void onMessage(Message message) {
@@ -87,8 +84,7 @@ public class ChatListenerImpl implements MessageListener {
             GroupChatDO groupChat = conversationService.findGroupChat(messageDO.getDestId());
             if(groupChat != null && !CollectionUtils.isEmpty(groupChat.getMembers())) {
                 List<String> userIds = groupChat.getMembers().stream()
-                        .filter(member -> !member.getUserId().equals(messageDO.getUserId()) //过滤自己
-                                && presenceManager.existsUser(member.getUserId())) //只处理在线用户
+                        .filter(member -> !member.getUserId().equals(messageDO.getUserId())) //过滤自己
                         .map(member -> member.getUserId()).collect(Collectors.toList());
                 redisCacheService.incUnreadNum(userIds, messageDO.getConversationId(), 1);
             }

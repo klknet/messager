@@ -74,12 +74,9 @@ public class RedisCacheService {
                 for (String userId: userIds) {
                     byte[] key = (Constants.CONV_NUMBER+":"+userId).getBytes();
                     connection.hIncrBy(key, id.getBytes(), delta);
-                    Long aLong = connection.pTtl(key);
-                    if (aLong == -1) {
-                        Calendar calendar = Calendar.getInstance();
-                        calendar.add(Calendar.DAY_OF_MONTH, 30);
-                        connection.expireAt(key, calendar.getTimeInMillis());
-                    }
+                    Calendar calendar = Calendar.getInstance();
+                    calendar.add(Calendar.DAY_OF_MONTH, 30);
+                    connection.expireAt(key, calendar.getTimeInMillis());
                 }
                 return null;
             }

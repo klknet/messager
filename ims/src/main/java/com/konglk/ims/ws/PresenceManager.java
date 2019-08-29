@@ -10,7 +10,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 @Component
 public class PresenceManager {
-    private final Map<String, ChatEndPoint> clientMap = new ConcurrentHashMap(256);
+    private final Map<String, ChatEndPoint> clientMap = new ConcurrentHashMap<>(256);//在线客户端连接
 
     @Autowired
     private RedisCacheService cacheService;
@@ -24,7 +24,7 @@ public class PresenceManager {
     }
 
     public void removeClient(String userId) {
-        if(StringUtils.isNotEmpty(userId))
+        if(existsUser(userId))
             clientMap.remove(userId);
     }
 
@@ -48,4 +48,5 @@ public class PresenceManager {
     public Map<String, ChatEndPoint> getClientMap() {
         return clientMap;
     }
+
 }

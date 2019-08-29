@@ -6,7 +6,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
-import javax.annotation.PostConstruct;
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.Map;
@@ -20,11 +19,10 @@ public class HeartBeatDetector {
     private PresenceManager presenceManager;
     private Logger logger = LoggerFactory.getLogger(getClass());
 
-    private final long liveTime = 1000*2*60;
+    private final long liveTime = 120000L;
 
     @Scheduled(cron = "0 */1 * * * *")
     public void detect() {
-        logger.info("begin remove timeout connection");
         Map<String, ChatEndPoint> clientMap = presenceManager.getClientMap();
         if (clientMap != null && clientMap.size()>0) {
             Iterator<Map.Entry<String, ChatEndPoint>> iterator = clientMap.entrySet().iterator();
@@ -32,13 +30,11 @@ public class HeartBeatDetector {
                 Map.Entry<String, ChatEndPoint> entry = iterator.next();
                 long cur = System.currentTimeMillis();
                 if (Math.abs(cur - entry.getValue().getTimestamp()) > liveTime) {
-                    try {
-                        entry.getValue().getSession().close();
-                    } catch (IOException e) {
-                        logger.error(e.getMessage(), e);
-                    }
-                    logger.info("remove timeout connection {}", entry.getValue().getNickname());
+                    ChatEndPoint client = entry.getValue();
+                    logger.info("remove timeout connection {}", client.getNickname());
+                    //移除在线状态，关闭client连接
                     iterator.remove();
+                    client.release();
                 }
             }
         }

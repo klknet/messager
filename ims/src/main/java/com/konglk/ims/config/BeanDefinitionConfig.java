@@ -19,8 +19,11 @@ import org.springframework.data.redis.connection.RedisStandaloneConfiguration;
 import org.springframework.data.redis.connection.jedis.JedisConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
+import org.springframework.scheduling.TaskScheduler;
 import org.springframework.scheduling.annotation.EnableAsync;
+import org.springframework.scheduling.concurrent.ConcurrentTaskScheduler;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import redis.clients.jedis.JedisPoolConfig;
 
 import java.util.ArrayList;
@@ -89,6 +92,15 @@ public class BeanDefinitionConfig  {
     private static final int keepAliveTime = 10;			// 允许线程空闲时间（单位：默认为秒）
     private static final int queueCapacity = 200;			// 缓冲队列数
     private static final String threadNamePrefix = "Async-Service-"; // 线程池名前缀
+
+
+    @Bean
+    public TaskScheduler taskScheduler() {
+        ThreadPoolTaskScheduler scheduler = new ThreadPoolTaskScheduler();
+        scheduler.setPoolSize(2);
+        scheduler.setThreadNamePrefix("Scheduler-Service-");
+        return scheduler;
+    }
 
     @Bean
     public ThreadPoolTaskExecutor taskExecutor(){
