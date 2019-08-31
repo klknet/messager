@@ -20,7 +20,7 @@ public class TopicProducer {
     private PooledConnectionFactory factory;
     @Autowired
     private TopicNameManager topicNameManager;
-    @Qualifier("jmsTopicTemplate")
+    @Resource(name = "jmsTopicTemplate")
     private JmsTemplate jmsTemplate;
 
     /**
@@ -29,6 +29,7 @@ public class TopicProducer {
      * @param route
      */
     public void sendChatMessage(String text, String route) {
+        route = null;
         jmsTemplate.convertAndSend(topicNameManager.getChatName(route), text);
     }
 

@@ -54,7 +54,7 @@ public class BeanDefinitionConfig  {
     @Bean("jmsTopicTemplate")
     public JmsTemplate jmsTopicTemplate(PooledConnectionFactory factory) {
         JmsTemplate jmsTemplate = new JmsTemplate(factory);
-        jmsTemplate.setPubSubNoLocal(true);
+        jmsTemplate.setPubSubDomain(true);
         return jmsTemplate;
     }
 

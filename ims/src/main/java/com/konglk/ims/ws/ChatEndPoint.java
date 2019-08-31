@@ -65,11 +65,14 @@ public class ChatEndPoint {
     }
 
     @OnMessage
-    public void incoming(String message)
-            throws Exception {
+    public void incoming(String message) {
         logger.debug(message);
-        Request request = JSON.parseObject(message, Request.class);
-        this.messageHandler.process(request, this);
+        try {
+            Request request = JSON.parseObject(message, Request.class);
+            this.messageHandler.process(request, this);
+        } catch (Throwable e) {
+            logger.error("processing message error. "+e.getMessage(), e);
+        }
     }
 
     @OnClose
