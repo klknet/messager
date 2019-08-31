@@ -29,7 +29,6 @@ public class TopicProducer {
      * @param route
      */
     public void sendChatMessage(String text, String route) {
-        route = null;
         jmsTemplate.convertAndSend(topicNameManager.getChatName(route), text);
     }
 
