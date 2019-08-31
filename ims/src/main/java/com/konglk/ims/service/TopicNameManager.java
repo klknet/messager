@@ -11,7 +11,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class TopicNameManager {
 
-    private int topicNum = 2;
+    private int topicNum = 2; //must be power of 2.
     private String chat = "ims.chat.";
     private String notify = "ims.notify";
 
@@ -20,7 +20,7 @@ public class TopicNameManager {
 
 
     public String getChatName(String route) {
-        return chat + Math.abs(route.hashCode() % topicNum);
+        return chat + (route.hashCode() & Integer.MAX_VALUE & (topicNum-1));
     }
 
     public String getNotifyName() {

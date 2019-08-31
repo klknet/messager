@@ -4,6 +4,7 @@ import com.alibaba.fastjson.JSON;
 import com.konglk.ims.service.TopicNameManager;
 import org.apache.activemq.jms.pool.PooledConnectionFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.jms.core.JmsTemplate;
 import org.springframework.stereotype.Service;
 
@@ -19,7 +20,7 @@ public class TopicProducer {
     private PooledConnectionFactory factory;
     @Autowired
     private TopicNameManager topicNameManager;
-    @Autowired
+    @Qualifier("jmsTopicTemplate")
     private JmsTemplate jmsTemplate;
 
     /**

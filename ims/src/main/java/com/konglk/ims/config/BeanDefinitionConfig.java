@@ -46,9 +46,16 @@ public class BeanDefinitionConfig  {
         return pooledConnectionFactory;
     }
 
-    @Bean
+    @Bean("jmsQueueTemplate")
     public JmsTemplate jmsTemplate(PooledConnectionFactory factory) {
         return new JmsTemplate(factory);
+    }
+
+    @Bean("jmsTopicTemplate")
+    public JmsTemplate jmsTopicTemplate(PooledConnectionFactory factory) {
+        JmsTemplate jmsTemplate = new JmsTemplate(factory);
+        jmsTemplate.setPubSubNoLocal(true);
+        return jmsTemplate;
     }
 
     @Bean
