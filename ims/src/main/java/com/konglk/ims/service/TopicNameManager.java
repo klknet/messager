@@ -11,39 +11,30 @@ import org.springframework.stereotype.Component;
 @Component
 public class TopicNameManager {
 
-    private int topicNum = 3;
-    private String chatPrd = "topic_ims_chat_";
-    private String chatDev = "topic_ims_chat_dev_";
-    private String notifyPrd = "topic_ims_notify";
-    private String notifyDev = "topic_ims_notify_dev";
+    private int topicNum = 2;
+    private String chat = "ims.chat";
+    private String notify = "ims.notify";
 
     @Autowired
     private SpringUtils springUtils;
 
 
     public String getChatName(String route) {
-        return chatBase() + Math.abs(route.hashCode() % topicNum);
+        return chat + Math.abs(route.hashCode() % topicNum);
     }
 
     public String getNotifyName() {
-        return notifyBase();
+        return notify;
     }
 
     public String[] topics() {
         String[] names = new String[topicNum];
         int i = topicNum;
         while (i-- > 0){
-            names[i] = chatBase()+i;
+            names[i] = chat+"."+i;
         }
         return names;
     }
 
-    private String chatBase() {
-        return springUtils.existProfile(Constants.DEV) ? chatDev : chatPrd;
-    }
-
-    private String notifyBase() {
-        return springUtils.existProfile(Constants.DEV) ? notifyDev : notifyPrd;
-    }
 
 }
