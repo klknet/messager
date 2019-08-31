@@ -34,4 +34,4 @@ server:
 activemq:
   username: amq_ims
   password: amq_ims_123456
-  url: tcp://${host}:61616
+  url: failover:(tcp://${host}:61616)

@@ -4,6 +4,7 @@ import com.alibaba.fastjson.JSON;
 import com.konglk.ims.service.TopicNameManager;
 import org.apache.activemq.jms.pool.PooledConnectionFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jms.core.JmsTemplate;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
@@ -18,6 +19,8 @@ public class TopicProducer {
     private PooledConnectionFactory factory;
     @Autowired
     private TopicNameManager topicNameManager;
+    @Autowired
+    private JmsTemplate jmsTemplate;
 
     /**
      * 发送聊天topic
@@ -25,34 +28,13 @@ public class TopicProducer {
      * @param route
      */
     public void sendChatMessage(String text, String route) {
-        TopicConnection connection = null;
-        try {
-            connection = factory.createTopicConnection();
-            connection.start();
-            TopicSession session = connection.createTopicSession(false, Session.AUTO_ACKNOWLEDGE);
-            MessageProducer producer = session.createProducer(session.createTopic(topicNameManager.getChatName(route)));
-            TextMessage textMessage = session.createTextMessage(text);
-            producer.send(textMessage);
-        } catch (JMSException e) {
-            e.printStackTrace();
-        }
+        jmsTemplate.convertAndSend(topicNameManager.getChatName(route), text);
     }
 
     /**
      * 通知类topic
-     * @param text
      */
     public void sendNotifyMessage(ResponseEvent event) {
-        TopicConnection connection = null;
-        try {
-            connection = factory.createTopicConnection();
-            connection.start();
-            TopicSession session = connection.createTopicSession(false, Session.AUTO_ACKNOWLEDGE);
-            MessageProducer producer = session.createProducer(session.createTopic(topicNameManager.getNotifyName()));
-            TextMessage textMessage = session.createTextMessage(JSON.toJSONString(event));
-            producer.send(textMessage);
-        } catch (JMSException e) {
-            e.printStackTrace();
-        }
+        jmsTemplate.convertAndSend(topicNameManager.getNotifyName(), JSON.toJSONString(event));
     }
 }
