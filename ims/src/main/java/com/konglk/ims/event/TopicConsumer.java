@@ -22,7 +22,7 @@ public class TopicConsumer {
     @Resource(name = "amqFactory")
     private PooledConnectionFactory factory;
     @Autowired
-    private ChatListenerImpl chatListner;
+    private ChatListenerImpl chatListener;
     @Autowired
     private NotifyListenerImpl notifyListener;
     @Autowired
@@ -47,7 +47,7 @@ public class TopicConsumer {
             TopicSession session = connection.createTopicSession(false, Session.AUTO_ACKNOWLEDGE);
             Topic topic = session.createTopic(names[i]);
             MessageConsumer consumer = session.createConsumer(topic);
-            consumer.setMessageListener(chatListner);
+            consumer.setMessageListener(chatListener);
             logger.info("consumer ready for {}", names[i]);
         }
         //通知类topic

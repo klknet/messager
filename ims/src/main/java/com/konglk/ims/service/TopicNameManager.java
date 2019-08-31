@@ -12,7 +12,7 @@ import org.springframework.stereotype.Component;
 public class TopicNameManager {
 
     private int topicNum = 2;
-    private String chat = "ims.chat";
+    private String chat = "ims.chat.";
     private String notify = "ims.notify";
 
     @Autowired
@@ -31,7 +31,7 @@ public class TopicNameManager {
         String[] names = new String[topicNum];
         int i = topicNum;
         while (i-- > 0){
-            names[i] = chat+"."+i;
+            names[i] = chat+i;
         }
         return names;
     }
