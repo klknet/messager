@@ -26,6 +26,7 @@ import org.springframework.stereotype.Service;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Created by konglk on 2019/4/20.
@@ -203,12 +204,9 @@ public class MessageService {
                 }
             }else if (new Integer(1).equals(message.getChatType())) {
                 GroupChatDO groupChat = conversationService.findGroupChat(message.getDestId());
-                groupChat.getMembers().forEach(m -> {
-                    if (presenceManager.existsUser(m.getUserId())) {
-                        ResponseEvent event = new ResponseEvent(response, m.getUserId());
-                        springUtils.getApplicationContext().publishEvent(event);
-                    }
-                });
+                List<String> userIds = groupChat.getMembers().stream().map(m -> m.getUserId()).collect(Collectors.toList());
+                ResponseEvent event = new ResponseEvent(response, userIds);
+                springUtils.getApplicationContext().publishEvent(event);
             }
         }
     }

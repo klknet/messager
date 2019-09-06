@@ -16,6 +16,7 @@ public enum ResponseStatus {
     M_REVOCATION(70002, "message revocation"), //撤回消息
     M_DELETE_MESSAGE(70003, "message delete"), //删除消息
     M_UPDATE_CONVERSATION(70004, "update conversation content"),//更新会话显示最后一条消息
+    M_ACK(70005, "ack"),//ack
     OK(200, "OK");
 
     int code;
@@ -26,4 +27,7 @@ public enum ResponseStatus {
         this.message = message;
     }
 
+    public int getCode() {
+        return code;
+    }
 }

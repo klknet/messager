@@ -2,6 +2,7 @@ package com.konglk.ims.cache;
 
 import com.alibaba.fastjson.JSON;
 import com.konglk.ims.model.FileMeta;
+import com.konglk.model.Response;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,7 +16,6 @@ import org.springframework.util.CollectionUtils;
 import java.util.Calendar;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -96,7 +96,7 @@ public class RedisCacheService {
     }
 
     /*
-    图片最好修改时间
+    图片最后修改时间
      */
     public void setModifiedTime(String id, String val) {
        redisTemplate.opsForValue().set(Constants.NOT_MODIFIED+":"+id, val, 7, TimeUnit.DAYS);
@@ -110,14 +110,26 @@ public class RedisCacheService {
     }
 
     /**
-     * 拿到消费此条消息的凭证
+     * 保存需要ack的消息
      * @param messageId
      * @return
      */
-    public Boolean isConsumeMessage(String messageId) {
-        String key = Constants.MESSAGE_HOLDER+":"+messageId;
-        Boolean res = redisTemplate.opsForValue().setIfAbsent(key, "0");
-        redisTemplate.expire(key, 8, TimeUnit.SECONDS);
-        return res;
+    public void setMsgResponse(String messageId, String userId) {
+        String key = Constants.MESSAGE_ACK+":"+messageId;
+        redisTemplate.opsForHash().put(key, userId, 1);
+    }
+
+    public void ackMsg(String messageId, String userId) {
+        String key = Constants.MESSAGE_ACK+":"+messageId;
+        redisTemplate.opsForHash().delete(key, userId);
+    }
+
+    public Object getMsgResponse(String messageId, String userId) {
+        String key = Constants.MESSAGE_ACK+":"+messageId;
+        Object event = redisTemplate.opsForHash().get(key, userId);
+        if (event == null)
+            return null;
+        redisTemplate.opsForHash().delete(key, userId);
+        return event;
     }
 }

@@ -11,12 +11,19 @@ import java.util.List;
 public class ResponseEvent extends ApplicationEvent {
 
     private String userId;
+    private List<String> userIds;
     private Response source;
 
     public ResponseEvent(Response source, String userId) {
         super(source);
         this.source = source;
         this.userId = userId;
+    }
+
+    public ResponseEvent(Response source, List<String> userIds) {
+        super(source);
+        this.source = source;
+        this.userIds = userIds;
     }
 
     public String getUserId() {
@@ -34,5 +41,13 @@ public class ResponseEvent extends ApplicationEvent {
 
     public void setSource(Response source) {
         this.source = source;
+    }
+
+    public List<String> getUserIds() {
+        return userIds;
+    }
+
+    public void setUserIds(List<String> userIds) {
+        this.userIds = userIds;
     }
 }

@@ -19,7 +19,7 @@ public class HeartBeatDetector {
     private PresenceManager presenceManager;
     private Logger logger = LoggerFactory.getLogger(getClass());
 
-    private final long liveTime = 120000L;
+    private final long liveTime = 60000L;
 
     @Scheduled(cron = "0 */1 * * * *")
     public void detect() {

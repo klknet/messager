@@ -1,11 +1,8 @@
 package com.konglk.ims.event;
 
 import com.alibaba.fastjson.JSON;
-import com.konglk.ims.cache.RedisCacheService;
 import com.konglk.ims.domain.FailedMessageDO;
-import com.konglk.ims.domain.GroupChatDO;
 import com.konglk.ims.domain.MessageDO;
-import com.konglk.ims.service.ConversationService;
 import com.konglk.ims.service.MessageService;
 import com.konglk.model.Response;
 import com.konglk.model.ResponseStatus;
@@ -13,16 +10,12 @@ import org.apache.activemq.command.ActiveMQTextMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Service;
-import org.springframework.util.CollectionUtils;
 
 import javax.jms.JMSException;
 import javax.jms.Message;
 import javax.jms.MessageListener;
 import java.util.Date;
-import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * Created by konglk on 2019/4/20.
@@ -35,12 +28,7 @@ public class ChatListenerImpl implements MessageListener {
 
     @Autowired
     private MessageService messageService;
-    @Autowired
-    private ConversationService conversationService;
-    @Autowired
-    private ThreadPoolTaskExecutor executor;
-    @Autowired
-    private RedisCacheService redisCacheService;
+
 
     @Override
     public void onMessage(Message message) {
@@ -51,17 +39,8 @@ public class ChatListenerImpl implements MessageListener {
             try {
                 text = textMessage.getText();
                 messageDO = JSON.parseObject(text, MessageDO.class);
-                final MessageDO m = messageDO;
-                final String t = text;
-                //确保消息只被存库一次，未读消息只增加一次
-                if (redisCacheService.isConsumeMessage(messageDO.getMessageId())) {
-                    messageService.insert(messageDO);
-                    conversationService.updateConversation(messageDO);
-                    //未读消息+1
-                    executor.submit(()->incrementUnread(m));
-                }
                 //消息处理事件
-                executor.submit(()->messageService.notifyAll(m, new Response(ResponseStatus.M_TRANSFER_MESSAGE, Response.MESSAGE, t)));
+                messageService.notifyAll(messageDO, new Response(ResponseStatus.M_TRANSFER_MESSAGE, Response.MESSAGE, text));
             }catch(JMSException jms) {
                 logger.error(jms.getMessage(), jms);
             } catch (Exception e) {
@@ -77,19 +56,7 @@ public class ChatListenerImpl implements MessageListener {
         }
     }
 
-    protected void incrementUnread(MessageDO messageDO) {
-        if(messageDO.getChatType() == 0) {
-            redisCacheService.incUnreadNum(messageDO.getDestId(), messageDO.getConversationId(), 1);
-        }else {
-            GroupChatDO groupChat = conversationService.findGroupChat(messageDO.getDestId());
-            if(groupChat != null && !CollectionUtils.isEmpty(groupChat.getMembers())) {
-                List<String> userIds = groupChat.getMembers().stream()
-                        .filter(member -> !member.getUserId().equals(messageDO.getUserId())) //过滤自己
-                        .map(member -> member.getUserId()).collect(Collectors.toList());
-                redisCacheService.incUnreadNum(userIds, messageDO.getConversationId(), 1);
-            }
-        }
-    }
+
 
 
 }

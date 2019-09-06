@@ -28,7 +28,7 @@ public class ImsApplication
 
     @Bean
     @Profile(Constants.DEV)
-    public static ServerEndpointExporter serverEndpointExporter() {
+    public ServerEndpointExporter serverEndpointExporter() {
         ServerEndpointExporter serverEndpointExporter = new ServerEndpointExporter();
         serverEndpointExporter.setAnnotatedEndpointClasses(ChatEndPoint.class);
         return serverEndpointExporter;
