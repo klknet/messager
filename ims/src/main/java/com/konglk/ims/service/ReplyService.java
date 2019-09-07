@@ -40,6 +40,7 @@ public class ReplyService {
      */
     public void replyTicketError(ChatEndPoint client) {
         reply(client, new Response(ResponseStatus.TICKET_ERROR, Response.USER));
+        client.release();
     }
 
     public void replyPong(ChatEndPoint client) {
