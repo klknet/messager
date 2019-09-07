@@ -196,6 +196,7 @@ public class MessageService {
             if(new Integer(0).equals(message.getChatType())) {
                 //消息发送自己和对方
                 ResponseEvent event = new ResponseEvent(response, Arrays.asList(message.getUserId(), message.getDestId()));
+                springUtils.getApplicationContext().publishEvent(event);
             }else if (new Integer(1).equals(message.getChatType())) {
                 GroupChatDO groupChat = conversationService.findGroupChat(message.getDestId());
                 List<String> userIds = groupChat.getMembers().stream().map(m -> m.getUserId()).collect(Collectors.toList());

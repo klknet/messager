@@ -58,7 +58,7 @@ public class ResponseEventListener implements ApplicationListener<ResponseEvent>
                         String data = response.getData();
                         MessageDO messageDO = JSON.parseObject(data, MessageDO.class);
                         cacheService.setMsgResponse(messageDO.getMessageId(), id);
-                        //30秒无ack会重传
+                        //10秒无ack会重传
                         taskScheduler.schedule(new Runnable() {
                             @Override
                             public void run() {
@@ -67,7 +67,7 @@ public class ResponseEventListener implements ApplicationListener<ResponseEvent>
                                     replyService.reply(presenceManager.getClient(id), response);
                                 }
                             }
-                        }, DateUtils.addSeconds(new Date(), 30));
+                        }, DateUtils.addSeconds(new Date(), 10));
                     }
                     ChatEndPoint client = presenceManager.getClient(id);
                     replyService.reply(client, response);
