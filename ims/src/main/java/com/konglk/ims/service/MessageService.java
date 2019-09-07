@@ -23,6 +23,7 @@ import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.data.mongodb.gridfs.GridFsTemplate;
 import org.springframework.stereotype.Service;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
@@ -194,14 +195,7 @@ public class MessageService {
         if (message != null) {
             if(new Integer(0).equals(message.getChatType())) {
                 //消息发送自己和对方
-                if (presenceManager.existsUser(message.getUserId())) {
-                    ResponseEvent event = new ResponseEvent(response, message.getUserId());
-                    springUtils.getApplicationContext().publishEvent(event);
-                }
-                if (presenceManager.existsUser(message.getDestId())) {
-                    ResponseEvent event = new ResponseEvent(response, message.getDestId());
-                    springUtils.getApplicationContext().publishEvent(event);
-                }
+                ResponseEvent event = new ResponseEvent(response, Arrays.asList(message.getUserId(), message.getDestId()));
             }else if (new Integer(1).equals(message.getChatType())) {
                 GroupChatDO groupChat = conversationService.findGroupChat(message.getDestId());
                 List<String> userIds = groupChat.getMembers().stream().map(m -> m.getUserId()).collect(Collectors.toList());
