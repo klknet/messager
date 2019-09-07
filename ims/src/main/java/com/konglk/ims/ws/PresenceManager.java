@@ -24,7 +24,7 @@ public class PresenceManager {
     }
 
     public void removeClient(String userId) {
-        if(existsUser(userId))
+        if(StringUtils.isNotEmpty(userId) && existsUser(userId))
             clientMap.remove(userId);
     }
 

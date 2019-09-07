@@ -1,6 +1,7 @@
 package com.konglk.ims.ws;
 
 import com.alibaba.fastjson.JSON;
+import com.konglk.ims.service.ReplyService;
 import com.konglk.ims.util.RegExpUtil;
 import com.konglk.ims.util.SpringUtils;
 import com.konglk.model.Request;
@@ -27,11 +28,13 @@ public class ChatEndPoint {
     private Session session;
     private MessageHandler messageHandler;
     private PresenceManager presenceManager;
+    private ReplyService replyService;
 
     public ChatEndPoint() {
         this.nickname = ("client:" + connectionIds.getAndIncrement());
         this.messageHandler = SpringUtils.getBeanObj(MessageHandler.class);
         this.presenceManager = SpringUtils.getBeanObj(PresenceManager.class);
+        this.replyService = SpringUtils.getBeanObj(ReplyService.class);
         this.timestamp = System.currentTimeMillis();
     }
 
@@ -43,18 +46,18 @@ public class ChatEndPoint {
         if (StringUtils.isNotEmpty(queryString)) {
             userId = RegExpUtil.getUrlParameter(queryString, "userId");
             ticket = RegExpUtil.getUrlParameter(queryString, "ticket");
-            if (StringUtils.isNotEmpty(userId) || StringUtils.isNotEmpty(ticket) ||
+            if (StringUtils.isNotEmpty(userId) && StringUtils.isNotEmpty(ticket) &&
                     ticket.equals(presenceManager.getTicket(userId))) {
                 auth = true;
             }
         }
+        this.session = session;
+        this.userId = userId;
         if (!auth) {
-            release();
+            replyService.replyTicketError(this);
             return;
         }
         logger.info("new connection active {}", this.nickname);
-        this.session = session;
-        this.userId = userId;
         this.auth = true;
         if (presenceManager.existsUser(userId)) {
             ChatEndPoint endPoint = presenceManager.getClient(userId);
