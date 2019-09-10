@@ -31,6 +31,6 @@ public class Test {
         ResponseEvent e1 = JSON.parseObject(str, ResponseEvent.class);
         System.out.println(e1);
 
-        FileInputStream in = new FileInputStream();
+//        FileInputStream in = new FileInputStream();
     }
 }

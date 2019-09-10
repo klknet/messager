@@ -22,8 +22,6 @@ public class NotifyListenerImpl implements MessageListener {
 
     private Logger logger = LoggerFactory.getLogger(getClass());
     @Autowired
-    private PresenceManager presenceManager;
-    @Autowired
     private SpringUtils springUtils;
 
     @Override
@@ -35,9 +33,7 @@ public class NotifyListenerImpl implements MessageListener {
                 ActiveMQTextMessage textMessage = (ActiveMQTextMessage) message;
                 text = textMessage.getText();
                 event = JSON.parseObject(text, ResponseEvent.class);
-                if (presenceManager.existsUser(event.getUserId())) {
-                    springUtils.getApplicationContext().publishEvent(event);
-                }
+                springUtils.getApplicationContext().publishEvent(event);
             } catch (JMSException jms) {
                 logger.error(jms.getMessage(), jms);
             } catch (Exception e) {

@@ -304,7 +304,8 @@ public class ConversationService {
         groupChatDO.setMembers(members);
         mongoTemplate.insert(groupChatDO);
         //生成九宫格头像
-        BufferedImage image = sudokuGenerator.clipImages(avatars.toArray(new String[avatars.size()]));
+        BufferedImage image = sudokuGenerator.clipImages(avatars.size()>9 ? avatars.subList(0, 9).toArray(new String[9])
+                : avatars.toArray(new String[avatars.size()]));
         //将图片存入gridfs
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         ImageIO.write(image, "JPG", outputStream);
@@ -326,12 +327,11 @@ public class ConversationService {
             conv.setType(1);
             conv.setProfileUrl(objectId.toString());
             mongoTemplate.insert(conv);
-            logger.info("build group conversation {} {}", uId, notename);
-            //通知群聊会话已创建
-            Response response = new Response(U_GROUP_CHAT, Response.USER);
-            ResponseEvent event = new ResponseEvent(response, uId);
-            topicProducer.sendNotifyMessage(event);
         }
+        //通知群聊会话已创建
+        Response response = new Response(U_GROUP_CHAT, Response.USER);
+        ResponseEvent event = new ResponseEvent(response, userIds);
+        topicProducer.sendNotifyMessage(event);
     }
 
     /**

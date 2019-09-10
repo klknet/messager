@@ -55,11 +55,12 @@ public class UserTest {
             if(CollectionUtils.isEmpty(userDOS)) {
                 break;
             }
-            List<String> exclude = Arrays.asList("780cc721-c9c8-4d95-a428-cf33a74e5b88",
-                    "1da947b0-03a1-4992-a788-025cb3f70ad1",
-                    "71218737-6acf-47c4-818c-dfebb3cdd79f");
-            for(int i=0; i<userDOS.size(); i+=12) {
-                int j=i+12;
+            List<String> exclude = Arrays.asList("d7568282-5a6f-4f9b-bb67-8b6c469c39ec",
+                    "dace64c7-f18a-418e-85b8-36f167aa3f9c",
+                    "cca05ed0-8fbf-4f66-8106-b4eb7ed32bb0");
+            int friendsNum = 255;
+            for(int i=0; i<userDOS.size(); i+=friendsNum) {
+                int j=i+friendsNum;
                 j = Math.min(j, userDOS.size());
                 for (int k=i; k<j; k++) {
                     UserDO userDO = userDOS.get(k);
@@ -69,7 +70,7 @@ public class UserTest {
                     if(CollectionUtils.isEmpty(friends))
                         continue;
                     userService.batchAddFriend(userDO.getUserId(), friends);
-                    conversationService.batchConversation(userDO.getUserId(), friends.stream().map(obj -> obj.getUserId()).collect(Collectors.toList()));
+//                    conversationService.batchConversation(userDO.getUserId(), friends.stream().map(obj -> obj.getUserId()).collect(Collectors.toList()));
                 }
             }
 
@@ -84,7 +85,8 @@ public class UserTest {
     public void batchInsert() {
         int n = 256;
         List<UserDO> users = new ArrayList<>();
-        String[] username = genUsername(n);
+//        String[] username = genUsername(n);
+        String[] username = getUsername(n);
         String[] cellphone = genCellphone(n);
         String[] email = genEmail(n);
         Random random = new Random();
@@ -103,11 +105,13 @@ public class UserTest {
             userDO.setCellphone(cellphone[i]);
             userDO.setMailbox(email[i]);
             userDO.setGender(random.nextInt(Integer.MAX_VALUE)&1);
-            userDO.setNickname(NameRandomUtil.getRandomJianHan(3+random.nextInt(Integer.MAX_VALUE)%3));
-            userDO.setSignature(NameRandomUtil.getRandomJianHan(5+random.nextInt(Integer.MAX_VALUE)%7));
+//            userDO.setNickname(NameRandomUtil.getRandomJianHan(3+random.nextInt(Integer.MAX_VALUE)%3));
+            userDO.setNickname(username[i]);
+//            userDO.setSignature(NameRandomUtil.getRandomJianHan(5+random.nextInt(Integer.MAX_VALUE)%7));
+            userDO.setSignature(username[i]);
             userDO.setRawPwd(EncryptUtil.encrypt(username[i]));
             userDO.setCity(city[random.nextInt(city.length)]);
-            userDO.setProfileUrl(profileIds.get(random.nextInt(Integer.MAX_VALUE)%profileIds.size()));
+//            userDO.setProfileUrl(profileIds.get(random.nextInt(Integer.MAX_VALUE)%profileIds.size()));
             users.add(userDO);
         }
         userService.batchInsert(users);
@@ -130,6 +134,14 @@ public class UserTest {
         }
         System.out.println("username"+k);
         return usernames.toArray(new String[n]);
+    }
+
+    private String[] getUsername(int n) {
+        String[] usernames = new String[n];
+        for (int i=0; i<n; i++) {
+            usernames[i] = "test_"+i;
+        }
+        return usernames;
     }
 
     private String[] genCellphone(int n) {
