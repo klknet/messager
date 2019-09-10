@@ -10,4 +10,6 @@ import org.springframework.data.mongodb.repository.MongoRepository;
 public interface IMessageRepository extends MongoRepository<MessageDO, ObjectId> {
 
     boolean existsByMessageId(String messageId);
+    MessageDO findByMessageIdAndUserId(String messageId, String userId);
+    MessageDO findByMessageId(String messageId);
 }

@@ -24,7 +24,6 @@ import org.springframework.data.mongodb.gridfs.GridFsTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -50,15 +49,29 @@ public class MessageService {
     @Autowired
     private TopicProducer topicProducer;
 
-    public List<MessageDO> prevMessages(String cid, String userId, Date createtime, boolean include) {
+    /**
+     *
+     * @param cid
+     * @param userId
+     * @param start  会话创建时间
+     * @param end 早于此时间的消息
+     * @param includeStart  是否包含当前时间点的数据
+     * @return
+     */
+    public List<MessageDO> prevMessages(String cid, String userId, Date start, Date end, boolean includeStart) {
         Query query = new Query();
-        //是否包含当前时间点的消息
-        if (include) {
-            query.addCriteria(Criteria.where("createTime").gte(createtime));
+        Criteria criteria = new Criteria();
+        //会话创建时间之后的消息
+        if (includeStart) {
+            criteria = criteria.and("createTime").gte(start);
         } else {
-            query.addCriteria(Criteria.where("createTime").gt(createtime));
+            criteria = criteria.and("createTime").gt(start);
         }
-        query.addCriteria(Criteria.where("conversationId").is(cid).and("type").gte(0).and("deleteIds").ne(userId));
+        if (end != null) {
+            criteria.lt(end);
+        }
+        criteria = criteria.and("conversationId").is(cid).and("type").gte(0).and("deleteIds").ne(userId);
+        query.addCriteria(criteria);
         query.with(PageRequest.of(0, 32, Sort.by(Sort.Direction.DESC, "createTime")));
         List<MessageDO> messageDOS = mongoTemplate.find(query, MessageDO.class);
         messageDOS.forEach(m -> {
@@ -67,7 +80,6 @@ public class MessageService {
                 m.setFileDetail(new FileDetail(gridFSFile.getLength(), gridFSFile.getFilename(), gridFSFile.getMetadata().getString("_contentType")));
             }
         });
-        Collections.reverse(messageDOS);
         return messageDOS;
     }
 
@@ -86,8 +98,8 @@ public class MessageService {
     撤回消息
      */
     public void revocation(String userId, String msgId) {
-        MessageDO message = findByMsgId(msgId);
-        if (msgId == null)
+        MessageDO message = messageRepository.findByMessageIdAndUserId(msgId, userId);
+        if (msgId == null || !userId.equals(message.getUserId()))
             throw new IllegalArgumentException();
         long time = message.getCreateTime().getTime();
         long now = System.currentTimeMillis();
@@ -125,7 +137,7 @@ public class MessageService {
     }
 
     public MessageDO findByMsgId(String msgId) {
-        return mongoTemplate.findOne(Query.query(Criteria.where("messageId").is(msgId)), MessageDO.class);
+        return messageRepository.findByMessageId(msgId);
     }
 
 

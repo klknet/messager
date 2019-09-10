@@ -2,6 +2,7 @@ package com.konglk.ims.controller;
 
 import com.konglk.ims.cache.RedisCacheService;
 import com.konglk.ims.service.MessageService;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
@@ -24,11 +25,13 @@ public class MessageController {
     private RedisCacheService redisCacheService;
 
     /*
-    取晚于createtime后消息
+    取晚于convCreateTime后早于lastMsgCreateTime消息
      */
     @GetMapping("/prev")
-    public Object prev(String cid, String userId, String createtime, boolean include) throws ParseException {
-        return messageService.prevMessages(cid, userId, new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSX").parse(createtime), include);
+    public Object prev(String cid, String userId, String start, String end, boolean include) throws ParseException {
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSX");
+        return messageService.prevMessages(cid, userId, sdf.parse(start),
+                StringUtils.isEmpty(end) ? null : sdf.parse(end), include);
     }
 
     /*
