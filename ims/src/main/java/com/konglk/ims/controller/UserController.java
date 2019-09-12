@@ -39,8 +39,9 @@ public class UserController {
     }
 
     @PostMapping({"/addFriend"})
-    public UserDO addFriend(String userId, String destId, String remark) {
-        return this.userService.addFriend(userId, destId, remark);
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void addFriend(String userId, String destId, String remark) {
+        this.userService.addFriend(userId, destId, remark);
     }
 
     @GetMapping("/find")

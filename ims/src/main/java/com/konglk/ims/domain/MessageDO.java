@@ -1,36 +1,32 @@
 package com.konglk.ims.domain;
 
 import com.konglk.ims.model.FileDetail;
-import org.springframework.data.annotation.Transient;
-import org.springframework.data.mongodb.core.index.CompoundIndex;
-import org.springframework.data.mongodb.core.index.Indexed;
-import org.springframework.data.mongodb.core.mapping.Document;
-import org.springframework.data.mongodb.core.mapping.Field;
 
+import javax.persistence.*;
 import java.util.Date;
 import java.util.List;
 
-@Document(collection = "c_message")
-@CompoundIndex(def = "{'conversation_id':1, 'create_time':-1}")
+@Table(name = "im_message")
+@Entity
 public class MessageDO {
-    @Field("message_id")
-    @Indexed(unique = true, name = "i_message_id")
+    @Id
+    @Column(name = "message_id")
     private String messageId;
-    @Field("conversation_id")
+    @Column(name = "conversation_id")
     private String conversationId;
-    @Field("create_time")
+    @Column(name = "create_time")
     private Date createTime;
     private String content;
-    @Field("user_id")
+    @Column(name = "user_id")
     private String userId;
-    @Field("dest_id")
+    @Column(name = "dest_id")
     private String destId;
-    @Field
-    private Integer type; //0-文字 1-图片 2-文件 3-表情 4-语音 5-视频 6-撤回 -1-删除
-    @Field("chat_type")
+    @Column
+    private Integer type; //0-文字 1-图片 2-文件 3-语音 4-视频 5-撤回 -1-删除
+    @Column(name = "chat_type")
     private Integer chatType; //0- 一对一聊天  1- 群聊
-    @Field("delete_ids")
-    private List<String> deleteIds; //删除这条消息的用户id
+    @Column(name = "delete_ids")
+    private String deleteIds; //删除这条消息的用户id
 
     @Transient
     private FileDetail fileDetail;
@@ -99,11 +95,11 @@ public class MessageDO {
         this.chatType = chatType;
     }
 
-    public List<String> getDeleteIds() {
+    public String getDeleteIds() {
         return deleteIds;
     }
 
-    public void setDeleteIds(List<String> deleteIds) {
+    public void setDeleteIds(String deleteIds) {
         this.deleteIds = deleteIds;
     }
 

@@ -4,15 +4,14 @@ import com.konglk.ims.domain.FriendDO;
 import com.konglk.ims.domain.UserDO;
 import com.konglk.ims.event.ResponseEvent;
 import com.konglk.ims.event.TopicProducer;
+import com.konglk.ims.repo.IFriendRepository;
+import com.konglk.ims.repo.IUserRepository;
 import com.konglk.ims.util.EncryptUtil;
 import com.konglk.ims.ws.PresenceManager;
 import com.konglk.model.Response;
 import com.konglk.model.ResponseStatus;
 import com.konglk.model.UserPO;
-import com.mongodb.BasicDBObject;
-import com.mongodb.BasicDBObjectBuilder;
 import org.apache.commons.lang3.StringUtils;
-import org.bson.Document;
 import org.bson.types.ObjectId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,14 +22,11 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.data.mongodb.core.aggregation.Aggregation;
-import org.springframework.data.mongodb.core.aggregation.TypedAggregation;
-import org.springframework.data.mongodb.core.query.BasicQuery;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
-import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.data.mongodb.gridfs.GridFsTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.DigestUtils;
 import org.springframework.web.multipart.MultipartFile;
@@ -38,7 +34,6 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.util.Date;
 import java.util.List;
-import java.util.Random;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -46,7 +41,6 @@ import java.util.stream.Collectors;
 public class UserService {
     private Logger logger = LoggerFactory.getLogger(getClass());
 
-    private static final String SALT = "konglk";
     @Autowired
     private MongoTemplate mongoTemplate;
     @Autowired
@@ -59,16 +53,19 @@ public class UserService {
     private ConversationService conversationService;
     @Autowired
     private TopicProducer topicProducer;
-
+    @Autowired
+    private IFriendRepository friendRepository;
+    @Autowired
+    private IUserRepository userRepository;
 
     public UserDO login(String unique, String pwd) {
         String raw = EncryptUtil.decrypt(pwd);
         logger.info("user {} password is {}", unique, pwd);
-        Query query = new Query();
-        query.addCriteria(new Criteria().orOperator(Criteria.where("username").is(unique),
-                Criteria.where("cellphone").is(unique),
-                Criteria.where("mailbox").is(unique)));
-        UserDO userDO = mongoTemplate.findOne(query, UserDO.class);
+        UserDO userDO = userRepository.findByUsername(unique);
+        if(userDO == null)
+            userDO = userRepository.findByCellphone(unique);
+        if (userDO == null)
+            userDO = userRepository.findByMailbox(unique);
         if (userDO == null) {
             return null;
         }
@@ -83,16 +80,18 @@ public class UserService {
             presenceManager.addTicket(userDO.getUserId(), ticket);
             userDO.setTicket(ticket);
             eraseSensitive(userDO);
+            List<FriendDO> friends = friendRepository.findByUserId(userDO.getUserId());
+            userDO.setFriends(friends);
             return userDO;
         }
         return null;
     }
 
 
-
+    @Transactional
     public void addUser(UserDO user) {
         populateData(user);
-        this.mongoTemplate.insert(user);
+        userRepository.save(user);
         this.logger.info("add new user {}", user.getUsername());
     }
 
@@ -102,16 +101,15 @@ public class UserService {
      * @param multipartFile
      * @return
      */
+    @Transactional
     public String updateAvatar(String userId, MultipartFile multipartFile) throws IOException {
         UserDO userDO = findByUserId(userId);
         if (userDO == null)
             throw new IllegalArgumentException();
         ObjectId objectId = gridFsTemplate.store(multipartFile.getInputStream(), multipartFile.getOriginalFilename(), multipartFile.getContentType());
-        userDO = mongoTemplate.findAndModify(
-                Query.query(Criteria.where("userId").is(userId)),
-                Update.update("profileUrl", objectId.toString()), UserDO.class);
-        if (!CollectionUtils.isEmpty(userDO.getFriends()))
-            updateFriendAvatar(userDO.getFriends().stream().map(FriendDO::getUserId).collect(Collectors.toList()), userId, objectId.toString());
+        //更新自己、好友、会话头像
+        userRepository.updateAvatar(userId, objectId.toString());
+        friendRepository.updateAvatar(userId, objectId.toString());
         conversationService.updateConvProfile(userId, objectId.toString());
         return objectId.toString();
     }
@@ -119,17 +117,18 @@ public class UserService {
     /*
     批量添加用户
      */
+    @Transactional
     public void batchInsert(List<UserDO> users) {
         if (CollectionUtils.isEmpty(users))
             return;
         int n = users.size();
         users.forEach(user -> populateData(user));
         if (n<=1024){
-            mongoTemplate.insertAll(users);
+            userRepository.saveAll(users);
         }else {
             int page = n % 1024 == 0 ? n>>10 : (n>>10) +1;
             for (int i=0; i<page; i++) {
-                mongoTemplate.insertAll(users.subList(i<<10, Math.min(n, (i<<10) + 1024)));
+                userRepository.saveAll(users.subList(i<<10, Math.min(n, (i<<10) + 1024)));
             }
 
         }
@@ -139,138 +138,90 @@ public class UserService {
     修改备注
      */
     public void setFriendNotename(String userId, String destId, String notename) {
-        Query query = new Query();
-        query.addCriteria(Criteria.where("user_id").is(userId).and("friends.user_id").is(destId));
-        Update update = new Update();
-        update.set("friends.$.remark", notename);
-        mongoTemplate.updateFirst(query, update, UserDO.class);
-    }
-
-    /**
-     * 通知更新好友的头像
-     * @param userIds
-     * @param destId
-     * @param profileUrl
-     */
-    public void updateFriendAvatar(List<String> userIds, String destId, String profileUrl) {
-        if(CollectionUtils.isEmpty(userIds))
+        if (StringUtils.isEmpty(userId) || StringUtils.isEmpty(destId) || StringUtils.isEmpty(notename))
             return;
-        Query query = new Query();
-        query.addCriteria(Criteria.where("userId").in(userIds).and("friends.userId").is(destId));
-        Update update = new Update();
-        update.set("friends.$.profileUrl", profileUrl);
-        mongoTemplate.updateMulti(query, update, UserDO.class);
+        friendRepository.updateRemark(userId, destId, notename);
     }
 
     /*
     添加朋友
      */
-    public UserDO addFriend(String userId, String destId, String remark) {
+    public void addFriend(String userId, String destId, String remark) {
         if (StringUtils.equals(userId, destId)) {
             throw new IllegalArgumentException("can't add yourself");
         }
         if(isFriend(userId, destId)) {
             logger.warn("{} and {} already friends", userId, destId);
-            return null;
+            return;
         }
         Query query = new Query().addCriteria(Criteria.where("userId").is(userId));
-        UserDO friend = this.mongoTemplate.findOne(new Query()
-                .addCriteria(Criteria.where("userId").is(destId)), UserDO.class);
+        UserDO friend = userRepository.findByUserId(destId);
         if (friend == null) {
-            return null;
+            return;
         }
-        FriendDO f = setFriendInfo(remark, friend);
-        Update update = new Update();
-        update.addToSet("friends", f);
-        logger.info("add friend {}", f.getUsername());
-        return this.mongoTemplate.findAndModify(query, update, UserDO.class);
+        FriendDO f = setFriendInfo(remark, userId, friend);
+        friendRepository.save(f);
     }
 
     /*
     删除朋友
      */
+    @Transactional
     public void delFriend(String userId, String friendId) {
-        Query query = Query.query(Criteria.where("userId").is(userId));
-        Update update = new Update();
-        update.pull("friends", new BasicDBObject("userId", friendId));
-        mongoTemplate.updateFirst(query, update, UserDO.class);
+        if(StringUtils.isEmpty(userId) || StringUtils.isEmpty(friendId)) {
+            return;
+        }
+        friendRepository.deleteByUserIdAndDestId(userId, friendId);
         logger.info("{} delete friend {}", userId, friendId);
     }
-
 
     /*
     添加多个朋友
      */
+    @Transactional
     public void batchAddFriend(String userId, List<UserDO> friends) {
-        Query query = new Query().addCriteria(Criteria.where("userId").is(userId));
-        List<FriendDO> friendDOS = friends.stream().map(userDO -> {
-            return setFriendInfo(null, userDO);
-        }).collect(Collectors.toList());
-        Update update = new Update();
-        update.addToSet("friends", BasicDBObjectBuilder.start("$each", friendDOS).get());
-        Random random = new Random();
-        this.mongoTemplate.findAndModify(query, update, UserDO.class);
+        List<FriendDO> friendDOS = friends.stream().map(userDO -> setFriendInfo(null, userId, userDO)).collect(Collectors.toList());
+        friendRepository.saveAll(friendDOS);
     }
 
     /*
     查询所有userIds
      */
     public List<UserDO> findUsers(String[] userIds) {
-        return mongoTemplate.find(new Query(Criteria.where("userId").in(userIds)), UserDO.class);
+        return userRepository.findByUserIdIn(userIds);
     }
 
     /*
     是否是好友
      */
     public boolean isFriend(String userId, String destId) {
-        Query query = new Query();
-        query.addCriteria(Criteria.where("userId").is(userId).and("friends.userId").is(destId));
-        return mongoTemplate.exists(query, UserDO.class);
+        return friendRepository.existsByUserIdAndDestId(userId, destId);
     }
 
     public UserDO findByUserId(String userId) {
-        Query query = new Query(Criteria.where("userId").is(userId));
-        UserDO userDO = mongoTemplate.findOne(query, UserDO.class);
-        userDO.setTicket(presenceManager.getTicket(userId));
-        return userDO;
+        return userRepository.findByUserId(userId);
     }
 
     /*
     分页获取用户
      */
-    public List<UserDO> findUserByPage(int page, int size) {
+    public List<UserDO> findUserByPage(int page, int size, Date time) {
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "userId"));
-        Query query = new Query();
-        query.with(pageable);
-        List<UserDO> userDOS = mongoTemplate.find(query, UserDO.class);
-        return userDOS;
+        return userRepository.findByCreateTimeAfter(time, pageable);
     }
 
     /*
     模糊查询用户信息
      */
     public List<UserPO> findUser(String username) {
-        Document queryObj = new Document("username", new Document("$regex", "^" + username + ".*$"));
-        Document fieldObj = new Document();
-        for(String field: UserPO.fields) {
-            fieldObj.put(field, 1);
-        }
-        BasicQuery basicQuery = new BasicQuery(queryObj, fieldObj);
-        List<UserDO> userDOs = mongoTemplate.find(basicQuery, UserDO.class);
-        return userDOs.stream().map(userDO -> {
+        List<UserDO> userDOS = userRepository.findByUsernameLike(username+"*");
+        return userDOS.stream().map(userDO -> {
             UserPO userPO = new UserPO();
             BeanUtils.copyProperties(userDO, userPO);
             return userPO;
         }).collect(Collectors.toList());
     }
 
-    /*
-    随机获取n个用户
-     */
-    public List<UserDO> randomUser(int n) {
-        TypedAggregation<UserDO> aggregation = Aggregation.newAggregation(UserDO.class, Aggregation.sample(n));
-        return mongoTemplate.aggregate(aggregation, UserDO.class).getMappedResults();
-    }
 
     private void populateData(UserDO user) {
         user.setUserId(UUID.randomUUID().toString());
@@ -290,9 +241,10 @@ public class UserService {
         }
     }
 
-    private FriendDO setFriendInfo(String remark, UserDO friend) {
+    private FriendDO setFriendInfo(String remark, String userId, UserDO friend) {
         FriendDO f = new FriendDO();
-        f.setUserId(friend.getUserId());
+        f.setDestId(friend.getUserId());
+        f.setUserId(userId);
         f.setProfileUrl(friend.getProfileUrl());
         f.setGender(friend.getGender());
         f.setCountry(friend.getCountry());
@@ -312,6 +264,5 @@ public class UserService {
         userDO.setRawPwd(null);
         userDO.setSalt(null);
     }
-
 
 }

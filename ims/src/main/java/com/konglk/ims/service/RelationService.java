@@ -1,10 +1,12 @@
 package com.konglk.ims.service;
 
+import com.konglk.ims.controller.UserController;
 import com.konglk.ims.domain.FriendDO;
 import com.konglk.ims.domain.FriendRequestDO;
 import com.konglk.ims.domain.UserDO;
 import com.konglk.ims.event.ResponseEvent;
 import com.konglk.ims.event.TopicProducer;
+import com.konglk.ims.repo.IFriendRepository;
 import com.konglk.model.Response;
 import com.konglk.model.ResponseStatus;
 import org.slf4j.Logger;
@@ -33,6 +35,8 @@ public class RelationService {
     private UserService userService;
     @Autowired
     private TopicProducer topicProducer;
+    @Autowired
+    private IFriendRepository friendRepository;
 
     /*
     请求添加朋友
@@ -41,8 +45,9 @@ public class RelationService {
         UserDO userDO = userService.findByUserId(userId);
         if(userDO == null)
             throw new IllegalArgumentException("userId not exists!");
-        if(userDO.getFriends() != null) {
-            for(FriendDO friendDO: userDO.getFriends()) {
+        List<FriendDO> friendDOS = friendRepository.findByUserId(userId);
+        if(friendDOS != null) {
+            for(FriendDO friendDO: friendDOS) {
                 if (friendDO.getUserId().equals(destId)) {
                     throw new IllegalArgumentException("destId was friend");
                 }

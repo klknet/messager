@@ -2,9 +2,14 @@ package com.konglk.ims.service;
 
 import com.konglk.ims.cache.RedisCacheService;
 import com.konglk.ims.comparator.ConversationComparator;
-import com.konglk.ims.domain.*;
+import com.konglk.ims.domain.ConversationDO;
+import com.konglk.ims.domain.GroupChatDO;
+import com.konglk.ims.domain.MessageDO;
+import com.konglk.ims.domain.UserDO;
 import com.konglk.ims.event.ResponseEvent;
 import com.konglk.ims.event.TopicProducer;
+import com.konglk.ims.repo.IConversationRepository;
+import com.konglk.ims.repo.IGroupChatRepository;
 import com.konglk.ims.util.SudokuGenerator;
 import com.konglk.model.Response;
 import com.mongodb.BasicDBObject;
@@ -15,14 +20,11 @@ import org.bson.types.ObjectId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.domain.Sort;
-import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.data.mongodb.core.query.Criteria;
-import org.springframework.data.mongodb.core.query.Query;
-import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.data.mongodb.gridfs.GridFsTemplate;
+import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 
 import javax.imageio.ImageIO;
@@ -31,7 +33,6 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.*;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static com.konglk.model.ResponseStatus.U_GROUP_CHAT;
@@ -42,8 +43,6 @@ public class ConversationService {
     private Logger logger = LoggerFactory.getLogger(getClass());
 
     @Autowired
-    private MongoTemplate mongoTemplate;
-    @Autowired
     private UserService userService;
     @Autowired
     private SudokuGenerator sudokuGenerator;
@@ -53,34 +52,37 @@ public class ConversationService {
     private RedisCacheService cacheService;
     @Autowired
     private TopicProducer topicProducer;
-
-    @Value("${host}")
-    String host;
+    @Autowired
+    private IConversationRepository conversationRepository;
+    @Autowired
+    private IGroupChatRepository IGroupChatRepository;
+    @Autowired
+    private NamedParameterJdbcTemplate jdbcTemplate;
 
     /*
     创建会话
      */
+    @Transactional
     public ConversationDO buildConversation(String userId, String destId) {
         ConversationDO conversationDO = getConversationDO(userId, destId);
         if (conversationDO == null) return null;
-        this.mongoTemplate.insert(conversationDO);
+        conversationRepository.save(conversationDO);
         logger.info("build conversation {} {}", userId, destId);
         return conversationDO;
     }
 
+    @Transactional
     public void batchConversation(String userId, List<String> destIds) {
         List<ConversationDO> convs = new ArrayList<>(destIds.size());
         convs = destIds.stream().map(id -> getConversationDO(userId, id)).collect(Collectors.toList());
-        mongoTemplate.insertAll(convs);
+        conversationRepository.saveAll(convs);
     }
 
     /*
     获取用户的会话列表
      */
     public List<ConversationDO> listConversation(String userId) {
-        Query query = new Query(Criteria.where("userId").is(userId)).with(Sort.by(Sort.Direction.DESC,
-                "updateTime"));
-        List<ConversationDO> convs = this.mongoTemplate.find(query, ConversationDO.class);
+        List<ConversationDO> convs = conversationRepository.findByUserIdOrderByCreateTimeDesc(userId);
         if (CollectionUtils.isEmpty(convs))
             return Collections.emptyList();
         List<ConversationDO> tops = new ArrayList<>();
@@ -89,7 +91,7 @@ public class ConversationService {
         List<String> ids = new ArrayList<>();
         //置顶回话排在前面
         for (ConversationDO conv: convs) {
-            ids.add(conv.getId());
+            ids.add(conv.getConversationId());
             if (new Integer(1).equals(conv.getType()))
                 groupConvs.add(conv);
             if (BooleanUtils.isTrue(conv.getTop()))
@@ -108,7 +110,7 @@ public class ConversationService {
         if(groupConvs.size() > 0) {
             List<String> groupIds = groupConvs.stream().map(conv -> conv.getDestId()).collect(Collectors.toList());
             List<GroupChatDO> groupChats = findGroupChat(groupIds);
-            Map<String, GroupChatDO> map = groupChats.stream().collect(Collectors.toMap(GroupChatDO::getId, Function.identity()));
+            Map<String, List<GroupChatDO>> map = groupChats.stream().collect(Collectors.groupingBy(GroupChatDO::getGroupId));
             groupConvs.forEach(conv -> {
                 if(map.containsKey(conv.getDestId()))
                     conv.setGroupChat(map.get(conv.getDestId()));
@@ -129,31 +131,22 @@ public class ConversationService {
     /*
     消息置顶
      */
+    @Transactional
     public void topConversation(String userId, String conversationId, boolean top) {
-        Query query = new Query(Criteria.where("conversation_id").is(conversationId).and("userId").is(userId));
-        Update update = Update.update("top", top);
-        update.set("topUpdateTime", new Date());
-        mongoTemplate.updateFirst(query, update, ConversationDO.class);
+        conversationRepository.topConversation(conversationId, userId, top, new Date());
     }
 
     /*
     消息免打扰
      */
+    @Transactional
     public void dndConversation(String userId, String conversationId, boolean dnd) {
-        Query query = new Query(Criteria.where("conversation_id").is(conversationId).and("userId").is(userId));
-        Update update = Update.update("dnd", dnd);
-        mongoTemplate.updateFirst(query, update, ConversationDO.class);
+        conversationRepository.dndConversation(conversationId, userId, dnd);
     }
 
     /*
     删除会话
      */
-    public void delete(String conversationId, String userId) {
-        Query query = new Query(Criteria.where("conversationId").is(conversationId).and("userId").is(userId));
-        this.mongoTemplate.remove(query, ConversationDO.class);
-        logger.info("delete conversation {} {}", conversationId, userId);
-    }
-
     /**
      * 更新会话时间，消息
      * @param conversationId
@@ -162,21 +155,32 @@ public class ConversationService {
      * @param type
      * @param msg
      */
+    @Transactional
     public void updateLastTime(String conversationId, String userId, Date date, Integer type, String msg) {
+        MapSqlParameterSource params = new MapSqlParameterSource();
         //会话最后更新时间要晚于消息发送时间
-        Criteria criteria = Criteria.where("conversationId").is(conversationId);
-        if (StringUtils.isNotEmpty(userId))
-            criteria.and("userId").is(userId);
-        Query query = new Query(criteria);
-        Update update = new Update();
+        String sql = "update im_conversation set last_msg=:lastMsg";
+        params.addValue("lastMsg", msg);
         if(date != null) {
-//            criteria.and("updateTime").lte(date);
-            update.set("updateTime", date);
+            sql += ",update_time=:updateTime";
+            params.addValue("updateTime", date);
         }
-        if (type != null)
-            update.set("messageType", type);
-        update.set("lastMsg", msg);
-        mongoTemplate.updateMulti(query, update, ConversationDO.class);
+        if (type != null) {
+            sql += ",message_type=:messageType";
+            params.addValue("messageType", type);
+        }
+        sql += " where conversation_id=:conversationId";
+        params.addValue("conversationId", conversationId);
+        if (StringUtils.isNotEmpty(userId)) {
+            sql += " and user_id=:userId";
+            params.addValue("userId", userId);
+        }
+        jdbcTemplate.update(sql, params);
+    }
+
+    @Transactional
+    public void delete(String conversationId, String userId) {
+        conversationRepository.removeByConversationIdAndUserId(conversationId, userId);
     }
 
 
@@ -184,17 +188,15 @@ public class ConversationService {
     是否存在会话
      */
     public boolean existConversation(String userId, String destId) {
-        Query query = Query.query(Criteria.where("userId").is(userId).and("destId").is(destId));
-        return mongoTemplate.exists(query, ConversationDO.class);
+        return conversationRepository.existsByUserIdAndDestId(userId, destId);
     }
 
     /*
     更新会话名称
      */
+    @Transactional
     public void updateConversationName(String userId, String destId, String notename) {
-        Query query = Query.query(Criteria.where("user_id").is(userId).and("dest_id").is(destId));
-        Update update = Update.update("notename", notename);
-        mongoTemplate.updateFirst(query, update, ConversationDO.class);
+       conversationRepository.updateConversationName(userId, destId, notename);
     }
 
     /*
@@ -203,15 +205,7 @@ public class ConversationService {
     public void joinConversation(String userId, String destId, String conversationId, Date createtime, Integer type) {
         ConversationDO conversationDO = new ConversationDO();
         UserDO friend = userService.findByUserId(destId);
-        UserDO userDO = userService.findByUserId(userId);
-        if (userDO.getFriends() != null) {
-            for (FriendDO friendDO : userDO.getFriends()) {
-                if (friendDO.getUserId().equals(friend.getUserId())) {
-                    conversationDO.setNotename(friendDO.getRemark());
-                    break;
-                }
-            }
-        }
+        conversationDO.setNotename(friend.getNickname());
         conversationDO.setUserId(userId);
         conversationDO.setDestId(destId);
         conversationDO.setProfileUrl(friend.getProfileUrl());
@@ -219,29 +213,17 @@ public class ConversationService {
         conversationDO.setCreateTime(createtime);
         conversationDO.setUpdateTime(createtime);
         conversationDO.setType(type);
-        mongoTemplate.insert(conversationDO);
+        conversationRepository.save(conversationDO);
     }
 
     public ConversationDO findByUserIdAndDestId(String userId, String destId) {
-        ConversationDO conversationDO = this.mongoTemplate.findOne(new Query(new Criteria()
-                .andOperator(new Criteria[]{Criteria.where("userId").is(userId), Criteria.where("destId").is(destId)})), ConversationDO.class);
-        return conversationDO;
+        return conversationRepository.findByUserIdAndDestId(userId, destId);
     }
 
     public ConversationDO findByConversationIdAndUserId(String conversationId, String userId) {
-        return mongoTemplate.findOne(Query.query(
-                Criteria.where("conversationId").is(conversationId).and("userId").is(userId)),
-                ConversationDO.class);
+        return conversationRepository.findByConversationIdAndUserId(conversationId, userId);
     }
 
-    /*
-    查询群聊成员
-     */
-    public GroupChatDO findGroupChat(String id) {
-        if (StringUtils.isEmpty(id))
-            return null;
-        return mongoTemplate.findById(id, GroupChatDO.class);
-    }
 
     /*
     查询多个id
@@ -250,12 +232,21 @@ public class ConversationService {
         if(CollectionUtils.isEmpty(id))
             return Collections.emptyList();
         if(id.size() == 1) {
-            GroupChatDO groupChat = findGroupChat(id.get(0));
-            return groupChat == null ? Collections.emptyList() : Arrays.asList(groupChat);
+            return IGroupChatRepository.findByGroupId(id.get(0));
         }
-        return mongoTemplate.find(Query.query(Criteria.where("_id").in(id)), GroupChatDO.class);
+        return IGroupChatRepository.findByIdIn(id);
     }
 
+    /*
+    查询多个id
+     */
+    public List<GroupChatDO> findGroupChat(String id) {
+        if(StringUtils.isEmpty(id))
+            return Collections.emptyList();
+        return IGroupChatRepository.findByGroupId(id);
+    }
+
+    @Transactional
     public void updateConversation(MessageDO messageDO) {
         ConversationDO conv = findByUserIdAndDestId(messageDO.getUserId(), messageDO.getDestId());
         if (new Integer(0).equals(conv.getType())) {
@@ -273,26 +264,23 @@ public class ConversationService {
     /*
     更新群聊消息
      */
+    @Transactional
     public void updateGroupChat(String destId, int type, String content) {
-        Query query = new Query(Criteria.where("dest_id").is(destId));
-        Update update = new Update();
-        update.set("updateTime", new Date());
-        update.set("messageType", type);
-        update.set("lastMsg", content);
-        mongoTemplate.updateMulti(query, update, ConversationDO.class);
+        conversationRepository.updateConversationInfo(destId, new Date(), type, content);
     }
 
     /*
     群聊
      */
+    @Transactional
     public void groupConversation(String userId, List<String> userIds, String notename) throws IOException {
         if (StringUtils.isEmpty(userId) || CollectionUtils.isEmpty(userIds))
             return;
-        GroupChatDO groupChatDO = new GroupChatDO();
         List<UserDO> users = userService.findUsers(userIds.toArray(new String[userIds.size()]));
         List<String> avatars = new ArrayList<>(userIds.size()); //头像
-        List<GroupChatDO.Member> members = users.stream().map(user -> {
-            GroupChatDO.Member member = new GroupChatDO.Member(user.getUserId(), user.getProfileUrl(),
+        String uuid = UUID.randomUUID().toString();
+        List<GroupChatDO> members = users.stream().map(user -> {
+            GroupChatDO member = new GroupChatDO(uuid, user.getUserId(), user.getProfileUrl(),
                     user.getNickname() == null ? user.getUsername() : user.getNickname());
             if (user.getProfileUrl().startsWith("http")) {
                 avatars.add(user.getProfileUrl());
@@ -301,8 +289,7 @@ public class ConversationService {
             }
             return member;
         }).collect(Collectors.toList());
-        groupChatDO.setMembers(members);
-        mongoTemplate.insert(groupChatDO);
+        IGroupChatRepository.saveAll(members);
         //生成九宫格头像
         BufferedImage image = sudokuGenerator.clipImages(avatars.size()>9 ? avatars.subList(0, 9).toArray(new String[9])
                 : avatars.toArray(new String[avatars.size()]));
@@ -311,23 +298,25 @@ public class ConversationService {
         ImageIO.write(image, "JPG", outputStream);
         ByteArrayInputStream inputStream = new ByteArrayInputStream(outputStream.toByteArray());
         DBObject metadata = new BasicDBObject();
-        metadata.put("group_id", groupChatDO.getId());
-        ObjectId objectId = gridFsTemplate.store(inputStream, groupChatDO.getId(), "image/jpg", metadata);
+        metadata.put("group_id", uuid);
+        ObjectId objectId = gridFsTemplate.store(inputStream, uuid, "image/jpg", metadata);
 
         Date date = new Date();
         String convId = UUID.randomUUID().toString();
+        List<ConversationDO> convs = new ArrayList<>();
         for (String uId : userIds) {
             ConversationDO conv = new ConversationDO();
             conv.setUserId(uId);
-            conv.setDestId(groupChatDO.getId());
+            conv.setDestId(uuid);
             conv.setCreateTime(date);
             conv.setUpdateTime(date);
             conv.setConversationId(convId);
             conv.setNotename(notename);
             conv.setType(1);
             conv.setProfileUrl(objectId.toString());
-            mongoTemplate.insert(conv);
+            convs.add(conv);
         }
+        conversationRepository.saveAll(convs);
         //通知群聊会话已创建
         Response response = new Response(U_GROUP_CHAT, Response.USER);
         ResponseEvent event = new ResponseEvent(response, userIds);
@@ -340,9 +329,7 @@ public class ConversationService {
      * @param profileUrl
      */
     public void updateConvProfile(String userId, String profileUrl) {
-        Query query = new Query(Criteria.where("destId").is(userId));
-        Update update = Update.update("profileUrl", profileUrl);
-        mongoTemplate.updateMulti(query, update, ConversationDO.class);
+        conversationRepository.updateAvatar(userId, profileUrl);
     }
 
     private ConversationDO getConversationDO(String userId, String destId) {
@@ -364,17 +351,8 @@ public class ConversationService {
         if(friend == null || userDO == null) {
             throw new IllegalArgumentException();
         }
-
-        if (userDO.getFriends() != null) {
-            for (FriendDO friendDO : userDO.getFriends()) {
-                if (friendDO.getUserId().equals(friend.getUserId())) {
-                    conversationDO.setNotename(friendDO.getRemark());
-                    break;
-                }
-            }
-        }
+        conversationDO.setNotename(friend.getNickname());
         conversationDO.setProfileUrl(friend.getProfileUrl());
-
         conversationDO.setDestId(destId);
         conversationDO.setCreateTime(new Date());
         conversationDO.setUpdateTime(new Date());

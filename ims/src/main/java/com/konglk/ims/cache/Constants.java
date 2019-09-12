@@ -16,4 +16,8 @@ public class Constants {
     public static String NOT_MODIFIED = PREFIX+"last:modify";
     public static String MESSAGE_ACK = PREFIX + "msg:ack";
 
+    //config name
+    public static String CONFIG_TEST_USER_NUMBER = "test_user_number";
+    public static String CONFIG_TEST_USER_SEQUENCE = "test_user_sequence";
+
 }

@@ -13,6 +13,7 @@ import com.konglk.ims.ws.PresenceManager;
 import com.konglk.model.Response;
 import com.konglk.model.ResponseStatus;
 import com.mongodb.client.gridfs.model.GridFSFile;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -21,11 +22,14 @@ import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.data.mongodb.gridfs.GridFsTemplate;
+import org.springframework.jdbc.core.BeanPropertyRowMapper;
+import org.springframework.jdbc.core.SingleColumnRowMapper;
+import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Arrays;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -45,9 +49,10 @@ public class MessageService {
     @Autowired
     private GridFsTemplate gridFsTemplate;
     @Autowired
-    private PresenceManager presenceManager;
-    @Autowired
     private TopicProducer topicProducer;
+    @Autowired
+    private NamedParameterJdbcTemplate jdbcTemplate;
+
 
     /**
      *
@@ -59,21 +64,23 @@ public class MessageService {
      * @return
      */
     public List<MessageDO> prevMessages(String cid, String userId, Date start, Date end, boolean includeStart) {
-        Query query = new Query();
-        Criteria criteria = new Criteria();
-        //会话创建时间之后的消息
+        String sql = "select * from im_message where";
+        MapSqlParameterSource params = new MapSqlParameterSource();
+        params.addValue("start", start);
         if (includeStart) {
-            criteria = criteria.and("createTime").gte(start);
-        } else {
-            criteria = criteria.and("createTime").gt(start);
+            sql += " create_time>=:start";
+        }else {
+            sql += " create_time>:start";
         }
         if (end != null) {
-            criteria.lt(end);
+            params.addValue("end", end);
+            sql += " and create_time<:end";
         }
-        criteria = criteria.and("conversationId").is(cid).and("type").gte(0).and("deleteIds").ne(userId);
-        query.addCriteria(criteria);
-        query.with(PageRequest.of(0, 32, Sort.by(Sort.Direction.DESC, "createTime")));
-        List<MessageDO> messageDOS = mongoTemplate.find(query, MessageDO.class);
+        params.addValue("cid", cid);
+        sql += " and conversation_id=:cid and type>=0 and (delete_ids is null or delete_ids not like :deleteIds)";
+        sql += " order by create_time desc limit 0, 32";
+        params.addValue("deleteIds", userId+"%");
+        List<MessageDO> messageDOS = jdbcTemplate.query(sql, params, new BeanPropertyRowMapper<>(MessageDO.class));
         messageDOS.forEach(m -> {
             if (new Integer(2).equals(m.getType())) {
                 GridFSFile gridFSFile = gridFsTemplate.findOne(Query.query(Criteria.where("_id").is(m.getContent())));
@@ -83,11 +90,12 @@ public class MessageService {
         return messageDOS;
     }
 
+    @Transactional
     public void insert(MessageDO messageDO) {
         if(messageDO.getCreateTime() == null) {
             messageDO.setCreateTime(new Date());
         }
-        mongoTemplate.insert(messageDO);
+        messageRepository.save(messageDO);
     }
 
     public void failedMessage(FailedMessageDO msg) {
@@ -97,6 +105,7 @@ public class MessageService {
     /*
     撤回消息
      */
+    @Transactional
     public void revocation(String userId, String msgId) {
         MessageDO message = messageRepository.findByMessageIdAndUserId(msgId, userId);
         if (msgId == null || !userId.equals(message.getUserId()))
@@ -118,10 +127,9 @@ public class MessageService {
     /*
     更新消息类型
      */
+    @Transactional
     public void updateMsgType(String userId, String msgId, int type) {
-        Query query = new Query(Criteria.where("messageId").is(msgId).and("user_id").is(userId));
-        Update update = Update.update("type", type);
-        mongoTemplate.updateFirst(query, update, MessageDO.class);
+        messageRepository.updateMsgType(msgId, userId, type);
     }
 
     /**
@@ -129,11 +137,20 @@ public class MessageService {
      * @param msgId
      * @param userId
      */
+    @Transactional
     public void addToDeleteList(String msgId, String userId) {
-        Query query = new Query(Criteria.where("messageId").is(msgId));
-        Update update = new Update();
-        update.addToSet("deleteIds", userId);
-        mongoTemplate.updateFirst(query, update, MessageDO.class);
+        MessageDO messageDO = messageRepository.findByMessageId(msgId);
+        if (messageDO == null)
+            return;
+        String deleteIds = messageDO.getDeleteIds();
+        if (StringUtils.isEmpty(deleteIds))
+            deleteIds = userId;
+        else {
+            Set<String> unique = new TreeSet<>(Arrays.asList(deleteIds.split(",")));
+            unique.add(userId);
+            deleteIds = StringUtils.join(unique, ",");
+        }
+        messageRepository.updateDeleteIds(msgId, userId, deleteIds);
     }
 
     public MessageDO findByMsgId(String msgId) {
@@ -145,38 +162,28 @@ public class MessageService {
         return messageRepository.existsByMessageId(msgId);
     }
 
-    /**
-     * 上一条消息
-     * @param date
-     * @return
-     */
-    public MessageDO prevMessage(String conversationId, Date date) {
-        Query query = Query.query(Criteria.where("conversationId").is(conversationId).and("createTime").lt(date)).limit(1);
-        return mongoTemplate.findOne(query, MessageDO.class);
-    }
 
     /**
-     * 是否最好一条消息
+     * 是否最后一条消息
      * @param conversationId
      * @param date
      * @return
      */
     public boolean isLastMessage(String conversationId, String userId, Date date) {
-        return !mongoTemplate.exists(Query.query(Criteria.where("conversationId")
-                .is(conversationId).and("createTime").gt(date)
-                .and("type").gte(0).and("deleteIds").ne(userId)), MessageDO.class);
+        return messageRepository.isLastMsg(conversationId, userId+"%", date) == 1L;
     }
 
+    @Transactional
     public void delByMsgId(String msgId, String userId) {
         MessageDO messageDO = findByMsgId(msgId);
         boolean lastMsg = isLastMessage(messageDO.getConversationId(), userId, messageDO.getCreateTime());
         //最后一条消息要同步更新会话
         if (lastMsg) {
-            MessageDO preMsg = prevMessage(messageDO.getConversationId(), messageDO.getCreateTime());
+            MessageDO preMsg = messageRepository.prevMessage(messageDO.getConversationId(), userId, messageDO.getCreateTime());
             if (preMsg != null) {
                 conversationService.updateLastTime(messageDO.getConversationId(), userId, preMsg.getCreateTime(), preMsg.getType(), preMsg.getContent());
             }else
-                conversationService.updateLastTime(messageDO.getConversationId(), userId, null, 0, "");
+                conversationService.updateLastTime(messageDO.getConversationId(), userId, null, 0, "删除了一条消息");
             topicProducer.sendNotifyMessage(new ResponseEvent(
                     new Response(
                             ResponseStatus.M_UPDATE_CONVERSATION,
@@ -210,8 +217,8 @@ public class MessageService {
                 ResponseEvent event = new ResponseEvent(response, Arrays.asList(message.getUserId(), message.getDestId()));
                 springUtils.getApplicationContext().publishEvent(event);
             }else if (new Integer(1).equals(message.getChatType())) {
-                GroupChatDO groupChat = conversationService.findGroupChat(message.getDestId());
-                List<String> userIds = groupChat.getMembers().stream().map(m -> m.getUserId()).collect(Collectors.toList());
+                List<GroupChatDO> groupChat = conversationService.findGroupChat(message.getDestId());
+                List<String> userIds = groupChat.stream().map(m -> m.getUserId()).collect(Collectors.toList());
                 ResponseEvent event = new ResponseEvent(response, userIds);
                 springUtils.getApplicationContext().publishEvent(event);
             }

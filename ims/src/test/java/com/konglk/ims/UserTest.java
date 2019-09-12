@@ -1,10 +1,13 @@
 package com.konglk.ims;
 
+import com.konglk.ims.cache.Constants;
+import com.konglk.ims.domain.ConfigDO;
 import com.konglk.ims.domain.UserDO;
+import com.konglk.ims.repo.IConfigRepository;
+import com.konglk.ims.service.ConfigService;
 import com.konglk.ims.service.ConversationService;
 import com.konglk.ims.service.UserService;
 import com.konglk.ims.util.EncryptUtil;
-import com.konglk.ims.util.NameRandomUtil;
 import com.mongodb.client.MongoCursor;
 import com.mongodb.client.gridfs.GridFSFindIterable;
 import com.mongodb.client.gridfs.model.GridFSFile;
@@ -14,7 +17,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.gridfs.GridFsTemplate;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 
 import java.io.File;
@@ -27,12 +32,17 @@ import java.util.stream.Collectors;
  */
 @RunWith(SpringJUnit4ClassRunner.class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@ActiveProfiles("dev")
 public class UserTest {
 
     @Autowired
     private UserService userService;
     @Autowired
     private ConversationService conversationService;
+    @Autowired
+    private ConfigService configService;
+    @Autowired
+    private IConfigRepository configRepository;
 
     private String[] words = {"a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r",
     "s", "t", "u", "v", "w", "x", "y", "z"};
@@ -46,27 +56,24 @@ public class UserTest {
         System.out.println(userService.findByUserId("780cc721-c9c8-4d95-a428-cf33a74e5b88"));
     }
 
-    public void batchAddFriend() {
+    public void batchAddFriend(int friendsNum, Date time) {
         List<UserDO> userDOS = null;
         int page = 0;
         do {
-            userDOS = userService.findUserByPage(page, 1024);
+            userDOS = userService.findUserByPage(page, friendsNum, time);
             page += 1;
             if(CollectionUtils.isEmpty(userDOS)) {
                 break;
             }
-            List<String> exclude = Arrays.asList("d7568282-5a6f-4f9b-bb67-8b6c469c39ec",
-                    "dace64c7-f18a-418e-85b8-36f167aa3f9c",
-                    "cca05ed0-8fbf-4f66-8106-b4eb7ed32bb0");
-            int friendsNum = 255;
+            List<String> exclude = Arrays.asList("konglk","qintian","maomao");
             for(int i=0; i<userDOS.size(); i+=friendsNum) {
                 int j=i+friendsNum;
                 j = Math.min(j, userDOS.size());
                 for (int k=i; k<j; k++) {
                     UserDO userDO = userDOS.get(k);
-                    if (exclude.contains(userDO.getUserId()))
+                    if (exclude.contains(userDO.getUsername()))
                         continue;
-                    List<UserDO> friends = userDOS.subList(k+1, j);
+                    List<UserDO> friends = userDOS.stream().filter(u -> !u.getUserId().equals(userDO.getUserId())).collect(Collectors.toList());
                     if(CollectionUtils.isEmpty(friends))
                         continue;
                     userService.batchAddFriend(userDO.getUserId(), friends);
@@ -82,11 +89,16 @@ public class UserTest {
     批量插入10,000个用户
      */
     @Test
+//    @Transactional
     public void batchInsert() {
-        int n = 256;
+        ConfigDO configDO = configRepository.findByName(Constants.CONFIG_TEST_USER_NUMBER);
+        ConfigDO configDOSeq = configRepository.findByName(Constants.CONFIG_TEST_USER_SEQUENCE);
+        Date time = new Date();
+        int n = Integer.parseInt(configDO.getValue());
+        int base = Integer.parseInt(configDOSeq.getValue());
         List<UserDO> users = new ArrayList<>();
 //        String[] username = genUsername(n);
-        String[] username = getUsername(n);
+        String[] username = getUsername(base, n);
         String[] cellphone = genCellphone(n);
         String[] email = genEmail(n);
         Random random = new Random();
@@ -106,40 +118,33 @@ public class UserTest {
             userDO.setMailbox(email[i]);
             userDO.setGender(random.nextInt(Integer.MAX_VALUE)&1);
 //            userDO.setNickname(NameRandomUtil.getRandomJianHan(3+random.nextInt(Integer.MAX_VALUE)%3));
-            userDO.setNickname(username[i]);
+            userDO.setNickname("user-"+username[i]);
 //            userDO.setSignature(NameRandomUtil.getRandomJianHan(5+random.nextInt(Integer.MAX_VALUE)%7));
-            userDO.setSignature(username[i]);
+            userDO.setSignature("signature-"+username[i]);
             userDO.setRawPwd(EncryptUtil.encrypt(username[i]));
             userDO.setCity(city[random.nextInt(city.length)]);
+            userDO.setCountry("China");
 //            userDO.setProfileUrl(profileIds.get(random.nextInt(Integer.MAX_VALUE)%profileIds.size()));
             users.add(userDO);
         }
         userService.batchInsert(users);
-        batchAddFriend();
+        batchAddFriend(n, time);
+        configService.updateConfigValue(Constants.CONFIG_TEST_USER_SEQUENCE, base+n+"");
     }
 
-    private String[] genUsername(int n) {
-        Set<String> usernames = new HashSet<>();
-        int k=0;
-        Random random = new Random();
-        while (k<n) {
-            String name = "";
-            int digit = 6+random.nextInt(6);
-            for (int i=0; i<digit; i++) {
-                name += words[random.nextInt(Integer.MAX_VALUE) % words.length];
-            }
-            boolean add = usernames.add(name);
-            if (add)
-                k+=1;
-        }
-        System.out.println("username"+k);
-        return usernames.toArray(new String[n]);
+    @Test
+    public void updateConfig() {
+        ConfigDO configDO = configRepository.findByName(Constants.CONFIG_TEST_USER_NUMBER);
+        ConfigDO configDOSeq = configRepository.findByName(Constants.CONFIG_TEST_USER_SEQUENCE);
+        int n = Integer.parseInt(configDO.getValue());
+        int base = Integer.parseInt(configDOSeq.getValue());
+        configService.updateConfigValue(Constants.CONFIG_TEST_USER_SEQUENCE, base+n+"");
     }
 
-    private String[] getUsername(int n) {
+    private String[] getUsername(int base, int n) {
         String[] usernames = new String[n];
         for (int i=0; i<n; i++) {
-            usernames[i] = "test_"+i;
+            usernames[i] = ""+base++;
         }
         return usernames;
     }
@@ -202,7 +207,7 @@ public class UserTest {
             gridFsTemplate.store(in, f.getName(), "image/jpg");
             in.close();
         }
-
     }
+
 
 }

@@ -31,8 +31,6 @@ public class MessageHandler {
     @Autowired
     private TopicProducer producer;
     @Autowired
-    private PresenceManager presenceManager;
-    @Autowired
     private ReplyService replyService;
     @Autowired
     private MessageService messageService;
@@ -46,8 +44,8 @@ public class MessageHandler {
     public void process(Request request, ChatEndPoint client) throws IOException {
         switch (request.getType()) {
             case 0:  //ping
-                replyService.replyPong(client);
                 client.setTimestamp(System.currentTimeMillis());
+                replyService.replyPong(client);
                 break;
             case 1:  //ack
                 String msgId = request.getData();
@@ -66,7 +64,7 @@ public class MessageHandler {
                 executor.submit(()->incrementUnread(m));
                 //消息发送到mq
                 producer.sendChatMessage(request.getData(), messageDO.getConversationId());
-                client.getSession().getBasicRemote().sendText(JSON.toJSONString(new Response(ResponseStatus.M_ACK, Response.MESSAGE, messageDO.getMessageId())));
+                replyService.reply(client, new Response(ResponseStatus.M_ACK, Response.MESSAGE, messageDO.getMessageId()));
                 break;
         }
     }
@@ -75,9 +73,9 @@ public class MessageHandler {
         if(messageDO.getChatType() == 0) {
             redisCacheService.incUnreadNum(messageDO.getDestId(), messageDO.getConversationId(), 1);
         }else {
-            GroupChatDO groupChat = conversationService.findGroupChat(messageDO.getDestId());
-            if(groupChat != null && !CollectionUtils.isEmpty(groupChat.getMembers())) {
-                List<String> userIds = groupChat.getMembers().stream()
+            List<GroupChatDO> groupChat = conversationService.findGroupChat(messageDO.getDestId());
+            if(groupChat != null && !CollectionUtils.isEmpty(groupChat)) {
+                List<String> userIds = groupChat.stream()
                         .filter(member -> !member.getUserId().equals(messageDO.getUserId())) //过滤自己
                         .map(member -> member.getUserId()).collect(Collectors.toList());
                 redisCacheService.incUnreadNum(userIds, messageDO.getConversationId(), 1);

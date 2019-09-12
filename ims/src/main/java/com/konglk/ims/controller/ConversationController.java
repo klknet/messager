@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.List;
 
 @RestController
 @RequestMapping({"/conversation"})
@@ -42,7 +43,7 @@ public class ConversationController {
         taskExecutor.submit(()-> {
             try {
                 conversationService.groupConversation(userId, Arrays.asList(userIds.split(",")), notename);
-            } catch (IOException e) {
+            } catch (Exception e) {
                 logger.error(e.getMessage(), e);
             }
         });
@@ -83,7 +84,7 @@ public class ConversationController {
     群聊成员
      */
     @GetMapping("/groupChatMember")
-    public GroupChatDO groupChatMember(String id) {
+    public List<GroupChatDO> groupChatMember(String id) {
         return conversationService.findGroupChat(id);
     }
 

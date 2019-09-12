@@ -22,8 +22,12 @@ public class ReplyService {
         if(client == null)
             return;
         try {
-            client.getSession().getBasicRemote()
-                    .sendText(JSON.toJSONString(response));
+            synchronized (client.getSession()) {
+                if (client.getSession().isOpen()) {
+                    client.getSession().getBasicRemote()
+                            .sendText(JSON.toJSONString(response));
+                }
+            }
             if (response.getType() == Response.USER)
                 logger.info("{}-{} reply message - {}", client.getNickname(), client.getUserId(), response.getMessage());
         } catch (IOException e) {

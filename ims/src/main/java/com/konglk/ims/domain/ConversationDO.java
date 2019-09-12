@@ -1,53 +1,53 @@
 package com.konglk.ims.domain;
 
+
+import javax.persistence.*;
 import java.util.Date;
+import java.util.List;
 import java.util.Objects;
 
-import org.springframework.data.annotation.Id;
-import org.springframework.data.annotation.Transient;
-import org.springframework.data.mongodb.core.index.Indexed;
-import org.springframework.data.mongodb.core.mapping.Document;
-import org.springframework.data.mongodb.core.mapping.Field;
-
-@Document(collection = "c_conversation")
+@Table(name = "im_conversation")
+@Entity
 public class ConversationDO {
     @Id
-    private String id;
-    @Indexed(name = "i_conversation_id")
-    @Field("conversation_id")
+    @GeneratedValue(strategy= GenerationType.IDENTITY)
+    private Long id;
+    @Column(name = "conversation_id")
     private String conversationId;
-    @Indexed(name = "i_user_id")
-    @Field("user_id")
+    @Column(name = "user_id")
     private String userId;
-    @Indexed(name = "i_dest_id")
-    @Field("dest_id")
+    @Column(name = "dest_id")
     private String destId;
-    @Field("create_time")
+    @Column(name = "create_time")
     private Date createTime;
-    @Field("update_time")
+    @Column(name = "update_time")
     private Date updateTime;
     private String notename;
-    @Field("last_msg")
+    @Column(name = "last_msg")
     private String lastMsg;
-    @Field("profile_url")
+    @Column(name = "profile_url")
     private String profileUrl;
-    @Field
+    @Column
     private Boolean top;//置顶标识
-    @Field
+    @Column(name = "top_update_time")
     private Date topUpdateTime;
-    @Field
+    @Column
     private Boolean dnd; //Don't disturb
-    @Field("hide_name")
+    @Column(name = "hide_name")
     private boolean hideName;// 群聊时隐藏昵称
-    @Field
+    @Column
     private Integer type; //0: 一对一 1: 群聊
-    @Field("message_type")
+    @Column(name = "message_type")
     private Integer messageType; //消息类型
     @Transient
     private long unreadCount; //未读消息
 
     @Transient
-    private GroupChatDO groupChat;
+    private List<GroupChatDO> groupChat;
+
+    public void setId(Long id) {
+        this.id = id;
+    }
 
     public String getConversationId() {
         return this.conversationId;
@@ -137,14 +137,6 @@ public class ConversationDO {
         this.dnd = dnd;
     }
 
-    public String getId() {
-        return id;
-    }
-
-    public void setId(String id) {
-        this.id = id;
-    }
-
     public Date getTopUpdateTime() {
         return topUpdateTime;
     }
@@ -161,11 +153,11 @@ public class ConversationDO {
         this.messageType = messageType;
     }
 
-    public GroupChatDO getGroupChat() {
+    public List<GroupChatDO> getGroupChat() {
         return groupChat;
     }
 
-    public void setGroupChat(GroupChatDO groupChat) {
+    public void setGroupChat(List<GroupChatDO> groupChat) {
         this.groupChat = groupChat;
     }
 
