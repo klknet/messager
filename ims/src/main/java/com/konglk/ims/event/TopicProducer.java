@@ -23,8 +23,8 @@ public class TopicProducer {
      * @param text
      * @param route
      */
-    public void sendChatMessage(String text, String route) {
-        jmsTemplate.convertAndSend(topicNameManager.getChatName(route), text);
+    public void sendChatMessage(String text, int hash) {
+        jmsTemplate.convertAndSend(topicNameManager.getChatName(hash), text);
     }
 
     /**

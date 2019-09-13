@@ -63,7 +63,7 @@ public class ResponseEventListener implements ApplicationListener<ResponseEvent>
                             @Override
                             public void run() {
                                 Object msgResponse = cacheService.getMsgResponse(messageDO.getMessageId(), id);
-                                if (msgResponse != null && presenceManager.existsUser(id)) {
+                                if (msgResponse != null) {
                                     replyService.reply(presenceManager.getClient(id), response);
                                 }
                             }

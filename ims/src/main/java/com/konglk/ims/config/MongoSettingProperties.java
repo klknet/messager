@@ -20,8 +20,8 @@ public class MongoSettingProperties {
     private String password;
     private Boolean auth;
     private String authenticationDatabase;
-    private Integer minConnectionsPerHost = 3;
-    private Integer maxConnectionsPerHost = 100;
+    private Integer minConnectionsPerHost = 1;
+    private Integer maxConnectionsPerHost = 5;
     private Integer threadsAllowedToBlockForConnectionMultiplier = 5;
     private Integer serverSelectionTimeout = 30000;
     private Integer maxWaitTime = 120000;

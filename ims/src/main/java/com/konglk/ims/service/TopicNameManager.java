@@ -19,8 +19,8 @@ public class TopicNameManager {
     private SpringUtils springUtils;
 
 
-    public String getChatName(String route) {
-        return chat + (route.hashCode() & Integer.MAX_VALUE & (topicNum-1));
+    public String getChatName(int hash) {
+        return chat + (hash & (topicNum-1));
     }
 
     public String getNotifyName() {

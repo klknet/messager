@@ -7,8 +7,8 @@ spring:
       auth: true
       database: ims
       authenticationDatabase: ims
-      min-connection-per-host: 10
-      max-connection-per-host: 100
+      min-connection-per-host: 1
+      max-connection-per-host: 5
       max-wait-time: 10000
   datasource:
     type: com.zaxxer.hikari.HikariDataSource

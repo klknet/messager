@@ -12,6 +12,8 @@ import org.slf4j.LoggerFactory;
 import javax.websocket.*;
 import javax.websocket.server.ServerEndpoint;
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 
 @ServerEndpoint(value = "/ws/chat")
@@ -24,6 +26,7 @@ public class ChatEndPoint {
     private boolean auth;
     private boolean dropDown;//是否挤出标志
     private long timestamp;
+    private Map<String, Integer> hash;
 
     private Session session;
     private MessageHandler messageHandler;
@@ -36,6 +39,7 @@ public class ChatEndPoint {
         this.presenceManager = SpringUtils.getBeanObj(PresenceManager.class);
         this.replyService = SpringUtils.getBeanObj(ReplyService.class);
         this.timestamp = System.currentTimeMillis();
+        this.hash = new HashMap<>();
     }
 
     @OnOpen
@@ -90,6 +94,14 @@ public class ChatEndPoint {
     @OnError
     public void onError(Throwable t) {
         logger.error("WebSocket error. "+this.nickname, t);
+    }
+
+    public int getConversationHash(String conversationId) {
+        if (hash.containsKey(conversationId))
+            return hash.get(conversationId);
+        int hashCode = conversationId.hashCode();
+        hash.put(conversationId, hashCode & Integer.MAX_VALUE);
+        return hashCode;
     }
 
     public void release() {

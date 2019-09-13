@@ -161,7 +161,7 @@ public class FileController {
                 GridFSFile gridFSFile = gridFsTemplate.findOne(Query.query(Criteria.where("_id").is(objectId)));
                 messageDO.setFileDetail(new FileDetail(gridFSFile.getLength(), gridFSFile.getFilename(),
                         gridFSFile.getMetadata()==null?"":gridFSFile.getMetadata().getString("_contentType")));
-                producer.sendChatMessage(JSON.toJSONString(messageDO), messageDO.getConversationId());
+                producer.sendChatMessage(JSON.toJSONString(messageDO), messageDO.getConversationId().hashCode() & Integer.MAX_VALUE);
                 in.close();
                 file.delete();
             } catch (Exception e) {

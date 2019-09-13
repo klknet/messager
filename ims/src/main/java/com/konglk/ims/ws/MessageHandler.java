@@ -63,7 +63,7 @@ public class MessageHandler {
                 final MessageDO m = messageDO;
                 executor.submit(()->incrementUnread(m));
                 //消息发送到mq
-                producer.sendChatMessage(request.getData(), messageDO.getConversationId());
+                producer.sendChatMessage(request.getData(), client.getConversationHash(messageDO.getConversationId()));
                 replyService.reply(client, new Response(ResponseStatus.M_ACK, Response.MESSAGE, messageDO.getMessageId()));
                 break;
         }

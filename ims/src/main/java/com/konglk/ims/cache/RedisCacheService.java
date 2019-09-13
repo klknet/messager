@@ -117,6 +117,7 @@ public class RedisCacheService {
     public void setMsgResponse(String messageId, String userId) {
         String key = Constants.MESSAGE_ACK+":"+messageId;
         redisTemplate.opsForHash().put(key, userId, "1");
+        redisTemplate.expire(key, 5, TimeUnit.MINUTES);
     }
 
     public void ackMsg(String messageId, String userId) {
