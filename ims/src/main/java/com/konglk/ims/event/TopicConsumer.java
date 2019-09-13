@@ -5,6 +5,7 @@ import org.apache.activemq.jms.pool.PooledConnectionFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
@@ -16,6 +17,7 @@ import javax.jms.*;
  * Created by konglk on 2019/4/20.
  */
 @Service
+@Profile({"home", "company", "ali"})
 public class TopicConsumer {
 
     private Logger logger = LoggerFactory.getLogger(getClass());

@@ -21,7 +21,7 @@ import java.io.FileNotFoundException;
  */
 @RunWith(SpringJUnit4ClassRunner.class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@ActiveProfiles("test")
+@ActiveProfiles("dev")
 public class CommonTest {
     @Test
     public void aes() {

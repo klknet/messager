@@ -17,6 +17,10 @@ repositories {
     mavenCentral()
 }
 
+tasks.withType(JavaCompile) {
+    options.encoding = "UTF-8"
+}
+
 dependencies {
     compile project(':model')
     compile group: 'org.springframework.boot', name: 'spring-boot-starter-websocket'

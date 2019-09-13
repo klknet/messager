@@ -1,5 +1,6 @@
 package com.konglk.ims.service;
 
+import com.konglk.ims.domain.ConfigDO;
 import com.konglk.ims.repo.IConfigRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -16,5 +17,9 @@ public class ConfigService {
     @Transactional
     public void updateConfigValue(String name, String value) {
         configRepository.updateConfigValue(name, value);
+    }
+
+    public ConfigDO getConfigByName(String name) {
+        return configRepository.findByName(name);
     }
 }
