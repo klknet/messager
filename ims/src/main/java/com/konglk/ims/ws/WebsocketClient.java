@@ -41,7 +41,7 @@ public class WebsocketClient {
         this.userSession = userSession;
         sendMessage(new Request(0, "ping"));
         taskScheduler.scheduleAtFixedRate(() -> {
-            if (seq > 50) {
+            if (seq >= 8) {
                 release();
                 return;
             }
@@ -65,7 +65,7 @@ public class WebsocketClient {
             if (response.getType() == Response.MESSAGE && response.getCode() == ResponseStatus.M_TRANSFER_MESSAGE.getCode()) {
                 MessageDO msg = JSON.parseObject(response.getData(), MessageDO.class);
                 sendMessage(new Request(1, msg.getMessageId()));
-                System.out.println(msg.getContent()+" "+msg.getCreateTime());
+                System.out.println(user.getUsername()+" receive from "+msg.getContent()+" "+msg.getCreateTime());
             }
         } catch (Exception e) {
             e.printStackTrace();

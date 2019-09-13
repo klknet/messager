@@ -24,6 +24,7 @@ import org.springframework.web.client.RestTemplate;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Calendar;
+import java.util.Date;
 
 @RunWith(SpringJUnit4ClassRunner.class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -65,22 +66,18 @@ public class WebsocketClientTest {
         ConfigDO num = configService.getConfigByName(Constants.CONFIG_TEST_USER_NUMBER);
         int end = Integer.parseInt(seq.getValue());
         int start = Integer.parseInt(num.getValue());
-        for(int i=end-start; i<end-1; i++) {
+        for(int i=end-start; i<end-3; i++) {
             final String unique = ""+i;
             connect(unique, unique);
         }
-//        Calendar calendar = Calendar.getInstance();
-//        calendar.add(Calendar.MINUTE, 5);
-//        while (true) {
-//            try {
-//                Calendar c = Calendar.getInstance();
-//                if (c.after(calendar))
-//                    break;
-//                Thread.sleep(1000);
-//            } catch (InterruptedException e) {
-//                e.printStackTrace();
-//            }
-//        }
+        Calendar calendar = Calendar.getInstance();
+        calendar.add(Calendar.MINUTE, 5);
+        while (true) {
+            Calendar c = Calendar.getInstance();
+            if (c.after(calendar))
+                break;
+        }
+        System.out.println("#######end##########3"+new Date());
     }
 
 }
