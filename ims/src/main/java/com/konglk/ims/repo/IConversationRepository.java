@@ -5,7 +5,6 @@ import org.bson.types.ObjectId;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.data.repository.query.Param;
 
 import java.util.Date;
@@ -14,7 +13,7 @@ import java.util.List;
 /**
  * Created by konglk on 2019/8/14.
  */
-public interface IConversationRepository extends JpaRepository<ConversationDO, ObjectId> {
+public interface IConversationRepository extends JpaRepository<ConversationDO, String> {
 
     boolean existsByUserIdAndDestId(String userId, String destId);
 

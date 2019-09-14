@@ -71,11 +71,12 @@ public class WebsocketClientTest {
             connect(unique, unique);
         }
         Calendar calendar = Calendar.getInstance();
-        calendar.add(Calendar.MINUTE, 5);
+        calendar.add(Calendar.MINUTE, 2);
         while (true) {
             Calendar c = Calendar.getInstance();
             if (c.after(calendar))
                 break;
+            System.out.println("--------"+c.getTime());
         }
         System.out.println("#######end##########3"+new Date());
     }
