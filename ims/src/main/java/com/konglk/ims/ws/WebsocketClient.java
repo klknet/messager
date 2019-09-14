@@ -15,6 +15,7 @@ import java.net.URI;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.UUID;
+import java.util.concurrent.ScheduledFuture;
 
 @ClientEndpoint
 public class WebsocketClient {
@@ -22,6 +23,8 @@ public class WebsocketClient {
     ThreadPoolTaskScheduler taskScheduler;
     int seq;
     UserDO user;
+    int num;
+    ScheduledFuture future;
 
 
     public WebsocketClient(URI endpointURI, UserDO user) {
@@ -40,14 +43,18 @@ public class WebsocketClient {
         System.out.println("opening websocket "+user.getUsername());
         this.userSession = userSession;
         sendMessage(new Request(0, "ping"));
-        taskScheduler.scheduleAtFixedRate(() -> {
-            if (seq >= 8) {
-                release();
-                return;
-            }
-            MessageDO messageDO = getMessageDO();
-            sendMessage(new Request(2, JSON.toJSONString(messageDO)));
-        }, 8000L);
+        Calendar c = Calendar.getInstance();
+        c.add(Calendar.MINUTE, 1);
+        taskScheduler.schedule(() -> {
+            this.future = taskScheduler.scheduleAtFixedRate(() -> {
+                if (seq >= 8) {
+                    this.future.cancel(true);
+                    return;
+                }
+                MessageDO messageDO = getMessageDO();
+                sendMessage(new Request(2, JSON.toJSONString(messageDO)));
+            }, 5000L);
+        }, c.getTime());
     }
 
 
@@ -63,9 +70,10 @@ public class WebsocketClient {
                         sendMessage(new Request(0, "ping")), cal.getTime());
             }
             if (response.getType() == Response.MESSAGE && response.getCode() == ResponseStatus.M_TRANSFER_MESSAGE.getCode()) {
+                num++;
                 MessageDO msg = JSON.parseObject(response.getData(), MessageDO.class);
                 sendMessage(new Request(1, msg.getMessageId()));
-                System.out.println(user.getUsername()+" receive from "+msg.getContent()+" "+msg.getCreateTime());
+//                System.out.println(user.getUsername()+" receive from "+msg.getContent()+" "+msg.getCreateTime()+" "+num);
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -74,7 +82,7 @@ public class WebsocketClient {
 
     @OnClose
     public void onClose() {
-        System.out.println("closed "+user.getUsername());
+//        System.out.println("closed "+user.getUsername());
     }
 
     @OnError
@@ -85,6 +93,7 @@ public class WebsocketClient {
     public void release() {
         if (userSession.isOpen()) {
             try {
+                System.out.println(user.getUsername()+" consumes "+num+" messages");
                 userSession.close();
             } catch (IOException e) {
                 e.printStackTrace();

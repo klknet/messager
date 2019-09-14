@@ -88,17 +88,17 @@ public class BeanDefinitionConfig  {
         return redisTemplate;
     }
 
-    private static final int corePoolSize = 10;       		// 核心线程数（默认线程数）
-    private static final int maxPoolSize = 100;			    // 最大线程数
+    private static final int corePoolSize = 16;       		// 核心线程数（默认线程数）
+    private static final int maxPoolSize = 256;			    // 最大线程数
     private static final int keepAliveTime = 10;			// 允许线程空闲时间（单位：默认为秒）
-    private static final int queueCapacity = 200;			// 缓冲队列数
+    private static final int queueCapacity = 512;			// 缓冲队列数
     private static final String threadNamePrefix = "Async-Service-"; // 线程池名前缀
 
 
     @Bean
     public ThreadPoolTaskScheduler taskScheduler() {
         ThreadPoolTaskScheduler scheduler = new ThreadPoolTaskScheduler();
-        scheduler.setPoolSize(5);
+        scheduler.setPoolSize(16);
         scheduler.setThreadNamePrefix("Scheduler-Service-");
         return scheduler;
     }

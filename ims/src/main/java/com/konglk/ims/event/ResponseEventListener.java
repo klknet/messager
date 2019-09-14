@@ -73,9 +73,6 @@ public class ResponseEventListener implements ApplicationListener<ResponseEvent>
                     }
                     ChatEndPoint client = presenceManager.getClient(id);
                     replyService.reply(client, response);
-                }else {
-                    //离线用户将数据存入db，等用户上线后再推送。
-                    notifyService.saveNotify(id, JSON.toJSONString(response));
                 }
             }
         }

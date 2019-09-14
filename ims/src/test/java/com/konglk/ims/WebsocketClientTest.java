@@ -14,7 +14,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
-import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.util.LinkedMultiValueMap;
@@ -23,8 +22,9 @@ import org.springframework.web.client.RestTemplate;
 
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.Calendar;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
 @RunWith(SpringJUnit4ClassRunner.class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -37,9 +37,10 @@ public class WebsocketClientTest {
     private UserService userService;
     @Autowired
     private ConfigService configService;
+    @Autowired
+    private ThreadPoolTaskExecutor taskExecutor;
 
-    private void
-    connect(String unique, String pwd) {
+    private WebsocketClient connect(String unique, String pwd) {
         MultiValueMap<String, String> request = new LinkedMultiValueMap<>();
         request.add("unique", unique);
         request.add("pwd", EncryptUtil.encrypt(pwd));
@@ -50,14 +51,14 @@ public class WebsocketClientTest {
         UserDO userDO = restTemplate.postForObject("http://192.168.1.100/ims/user/login", request, UserDO.class);
         try {
             if(userDO == null)
-                return;
-            System.out.println(userDO.getUsername());
+                return null;
             final WebsocketClient client =
                     new WebsocketClient(new URI("ws://192.168.1.100/ims/ws/chat?userId="+userDO.getUserId()+"&ticket="+userDO.getTicket()), userDO);
-
+            return client;
         } catch (URISyntaxException e) {
             e.printStackTrace();
         }
+        return null;
     }
 
     @Test
@@ -66,18 +67,26 @@ public class WebsocketClientTest {
         ConfigDO num = configService.getConfigByName(Constants.CONFIG_TEST_USER_NUMBER);
         int end = Integer.parseInt(seq.getValue());
         int start = Integer.parseInt(num.getValue());
+        List<WebsocketClient> clients = new ArrayList<>();
         for(int i=end-start; i<end-3; i++) {
             final String unique = ""+i;
-            connect(unique, unique);
+            taskExecutor.submit(() -> clients.add(connect(unique, unique)));
+//            connect(unique, unique);
         }
-        Calendar calendar = Calendar.getInstance();
-        calendar.add(Calendar.MINUTE, 2);
+        long s = System.currentTimeMillis();
         while (true) {
-            Calendar c = Calendar.getInstance();
-            if (c.after(calendar))
+            long e = System.currentTimeMillis();
+            if (e-s > 1000*60*5)
                 break;
-            System.out.println("--------"+c.getTime());
+            else {
+                try {
+                    Thread.sleep(200);
+                } catch (InterruptedException ex) {
+                    ex.printStackTrace();
+                }
+            }
         }
+        clients.forEach(client -> client.release());
         System.out.println("#######end##########3"+new Date());
     }
 
