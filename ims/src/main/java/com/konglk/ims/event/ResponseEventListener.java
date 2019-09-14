@@ -12,6 +12,7 @@ import com.konglk.model.ResponseStatus;
 import org.apache.commons.lang3.time.DateUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationListener;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.stereotype.Component;
 
@@ -39,6 +40,7 @@ public class ResponseEventListener implements ApplicationListener<ResponseEvent>
     private RedisCacheService cacheService;
 
     @Override
+    @Async
     public void onApplicationEvent(ResponseEvent event) {
         if(event.getSource() instanceof Response) {
             Response response = (Response) event.getSource();
