@@ -17,7 +17,6 @@ import javax.jms.*;
  * Created by konglk on 2019/4/20.
  */
 @Service
-@Profile({"home", "company", "ali"})
 public class TopicConsumer {
 
     private Logger logger = LoggerFactory.getLogger(getClass());

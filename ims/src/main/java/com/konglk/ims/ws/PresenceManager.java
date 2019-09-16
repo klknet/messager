@@ -17,6 +17,7 @@ public class PresenceManager {
 
     public void addClient(String userId, ChatEndPoint chatEndPoint) {
         clientMap.put(userId, chatEndPoint);
+        cacheService.setOnline(userId);
     }
 
     public ChatEndPoint getClient(String userId) {
@@ -24,8 +25,10 @@ public class PresenceManager {
     }
 
     public void removeClient(String userId) {
-        if(StringUtils.isNotEmpty(userId) && existsUser(userId))
+        if(StringUtils.isNotEmpty(userId) && existsUser(userId)) {
             clientMap.remove(userId);
+            cacheService.setOffline(userId);
+        }
     }
 
     public boolean existsUser(String userId) {

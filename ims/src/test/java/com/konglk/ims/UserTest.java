@@ -86,7 +86,7 @@ public class UserTest {
     }
 
     /*
-    批量插入10,000个用户
+    批量插入256 个用户
      */
     @Test
 //    @Transactional
@@ -103,13 +103,13 @@ public class UserTest {
         String[] email = genEmail(n);
         Random random = new Random();
 
-        List<String> profileIds = new ArrayList<>();
-        GridFSFindIterable gridFSFiles = gridFsTemplate.find(new Query());
-        MongoCursor<GridFSFile> iterator = gridFSFiles.iterator();
-        while (iterator.hasNext()) {
-            GridFSFile next = iterator.next();
-            profileIds.add(next.getObjectId().toString());
-        }
+//        List<String> profileIds = new ArrayList<>();
+//        GridFSFindIterable gridFSFiles = gridFsTemplate.find(new Query());
+//        MongoCursor<GridFSFile> iterator = gridFSFiles.iterator();
+//        while (iterator.hasNext()) {
+//            GridFSFile next = iterator.next();
+//            profileIds.add(next.getObjectId().toString());
+//        }
         for (int i=0; i<n; i++) {
             UserDO userDO = new UserDO();
             userDO.setUsername(username[i]);

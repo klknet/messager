@@ -15,6 +15,7 @@ public class Constants {
     public static String CONV_NUMBER = PREFIX+"conv:num";
     public static String NOT_MODIFIED = PREFIX+"last:modify";
     public static String MESSAGE_ACK = PREFIX + "msg:ack";
+    public static String USER_ONLINE = PREFIX + "user:online";
 
     //config name
     public static String CONFIG_TEST_USER_NUMBER = "test_user_number";

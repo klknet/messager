@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
 import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -132,5 +133,33 @@ public class RedisCacheService {
             return null;
         redisTemplate.opsForHash().delete(key, userId);
         return event;
+    }
+
+    /**
+     * 设置全局在线状态
+     * @param userId
+     */
+    public void setOnline(String userId) {
+        redisTemplate.opsForHash().put(Constants.USER_ONLINE, userId, String.valueOf(System.currentTimeMillis()));
+    }
+
+    /**
+     * 离线
+     * @param userId
+     */
+    public void setOffline(String userId) {
+        redisTemplate.opsForHash().delete(Constants.USER_ONLINE, userId);
+    }
+
+    /**
+     * 判断用户是否在线
+     * @param userId
+     * @return
+     */
+    public boolean isOnline(String userId) {
+        Object o = redisTemplate.opsForHash().get(Constants.USER_ONLINE, userId);
+        if (o == null)
+            return false;
+        return true;
     }
 }

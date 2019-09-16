@@ -21,7 +21,7 @@ public class TopicProducer {
     /**
      * 发送聊天topic
      * @param text
-     * @param route
+     * @param hash
      */
     public void sendChatMessage(String text, int hash) {
         jmsTemplate.convertAndSend(topicNameManager.getChatName(hash), text);
