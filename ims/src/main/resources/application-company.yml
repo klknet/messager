@@ -4,7 +4,7 @@ spring:
     mongodb:
       address: ${host}:27017
   datasource:
-    url: jdbc:mysql://${host}/messager?zeroDateTimeBehavior=convertToNull&socketTimeout=60000&autoReconnect=true
+    url: jdbc:mysql://${host}/messager?zeroDateTimeBehavior=convertToNull&socketTimeout=60000&autoReconnect=true&useSSL=false
   redis:
     host: ${host}
 activemq:
