@@ -22,7 +22,7 @@ public class MongoSettingProperties {
     private String authenticationDatabase;
     private Integer minConnectionsPerHost = 1;
     private Integer maxConnectionsPerHost = 5;
-    private Integer threadsAllowedToBlockForConnectionMultiplier = 5;
+    private Integer threadsAllowedToBlockForConnectionMultiplier = 64;
     private Integer serverSelectionTimeout = 30000;
     private Integer maxWaitTime = 120000;
     private Integer maxConnectionIdleTime = 1000*60*20;

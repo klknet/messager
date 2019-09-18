@@ -74,7 +74,7 @@ public class ResponseEventListener implements ApplicationListener<ResponseEvent>
                     ChatEndPoint client = presenceManager.getClient(id);
                     replyService.reply(client, response);
                 } else if (!cacheService.isOnline(id)) {
-                    notifyService.saveNotify(id, JSON.toJSONString(response));
+//                    notifyService.saveNotify(id, JSON.toJSONString(response));
                 }
             }
         }

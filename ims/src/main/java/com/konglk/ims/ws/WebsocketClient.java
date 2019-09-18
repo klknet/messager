@@ -115,13 +115,13 @@ public class WebsocketClient {
 
     private MessageDO getMessageDO() {
         MessageDO messageDO = new MessageDO();
-        messageDO.setConversationId("e1cccd89-ca77-4b1f-b0d3-7c3a95c5e726");
+        messageDO.setConversationId("0a1d76eb-a4b5-4fbe-8a72-7720406dab1a");
         messageDO.setChatType(1);
         messageDO.setContent(user.getUsername()+"-"+seq++);
         messageDO.setType(0);
         messageDO.setUserId(user.getUserId());
         messageDO.setCreateTime(new Date());
-        messageDO.setDestId("9e65aa92-b724-41c3-808e-0ea5d2c86eba");
+        messageDO.setDestId("03f86884-d245-4a98-ad30-1e2787bd6b25");
         messageDO.setMessageId(UUID.randomUUID().toString());
         return messageDO;
     }

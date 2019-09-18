@@ -71,13 +71,6 @@ public class ConversationService {
         return conversationDO;
     }
 
-    @Transactional
-    public void batchConversation(String userId, List<String> destIds) {
-        List<ConversationDO> convs = new ArrayList<>(destIds.size());
-        convs = destIds.stream().map(id -> getConversationDO(userId, id)).collect(Collectors.toList());
-        conversationRepository.saveAll(convs);
-    }
-
     /*
     获取用户的会话列表
      */

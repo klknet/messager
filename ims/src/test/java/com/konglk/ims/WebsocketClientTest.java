@@ -10,8 +10,8 @@ import com.konglk.ims.ws.WebsocketClient;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.test.context.ActiveProfiles;
@@ -39,6 +39,8 @@ public class WebsocketClientTest {
     private ConfigService configService;
     @Autowired
     private ThreadPoolTaskExecutor taskExecutor;
+    @Value("${host}")
+    private String host;
 
     private WebsocketClient connect(String unique, String pwd) {
         MultiValueMap<String, String> request = new LinkedMultiValueMap<>();
@@ -47,13 +49,12 @@ public class WebsocketClientTest {
         HttpHeaders httpHeaders = new HttpHeaders();
         httpHeaders.add(HttpHeaders.CONTENT_TYPE, "application/x-www-form-urlencoded");
         httpHeaders.addAll(request);
-        HttpEntity entity = new HttpEntity(httpHeaders);
-        UserDO userDO = restTemplate.postForObject("http://192.168.1.100/ims/user/login", request, UserDO.class);
+        UserDO userDO = restTemplate.postForObject("http://"+host+"/ims/user/login", request, UserDO.class);
         try {
             if(userDO == null)
                 return null;
             final WebsocketClient client =
-                    new WebsocketClient(new URI("ws://192.168.1.100/ims/ws/chat?userId="+userDO.getUserId()+"&ticket="+userDO.getTicket()), userDO);
+                    new WebsocketClient(new URI("ws://"+host+"/ims/ws/chat?userId="+userDO.getUserId()+"&ticket="+userDO.getTicket()), userDO);
             return client;
         } catch (URISyntaxException e) {
             e.printStackTrace();
@@ -76,7 +77,7 @@ public class WebsocketClientTest {
         long s = System.currentTimeMillis();
         while (true) {
             long e = System.currentTimeMillis();
-            if (e-s > 1000*60*2)
+            if (e-s > 1000*60*5)
                 break;
             else {
                 try {
