@@ -21,7 +21,7 @@ public interface IConversationRepository extends JpaRepository<ConversationDO, S
 
     ConversationDO findByConversationIdAndUserId(String conversationId, String userId);
 
-    List<ConversationDO> findByUserIdOrderByCreateTimeDesc(String userId);
+    List<ConversationDO> findByUserIdOrderByUpdateTimeDesc(String userId);
 
     @Modifying
     @Query("update ConversationDO cd set cd.notename=:name where userId=:userId and destId=:destId")

@@ -3,6 +3,7 @@ package com.konglk.ims.cache;
 import com.alibaba.fastjson.JSON;
 import com.konglk.ims.model.FileMeta;
 import com.konglk.model.Response;
+import org.apache.commons.lang3.BooleanUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -72,6 +73,7 @@ public class RedisCacheService {
         redisTemplate.executePipelined(new RedisCallback<Object>() {
             @Override
             public Object doInRedis(RedisConnection connection) throws DataAccessException {
+                connection.openPipeline();
                 for (String userId: userIds) {
                     byte[] key = (Constants.CONV_NUMBER+":"+userId).getBytes();
                     connection.hIncrBy(key, id.getBytes(), delta);
@@ -162,4 +164,23 @@ public class RedisCacheService {
             return false;
         return true;
     }
+
+    /**
+     * 批量判断用户是否在线
+     */
+    public List<Boolean> isOnline(List<String> userIds) {
+        if (CollectionUtils.isEmpty(userIds))
+            return null;
+        return redisTemplate.executePipelined(new RedisCallback<Boolean>() {
+            @Override
+            public Boolean doInRedis(RedisConnection connection) throws DataAccessException {
+                for (String userId: userIds) {
+                    byte[] key = (Constants.USER_ONLINE).getBytes();
+                    connection.hExists(key, userId.getBytes());
+                }
+                return null;
+            }
+        });
+    }
+
 }

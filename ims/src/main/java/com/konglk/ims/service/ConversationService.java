@@ -75,7 +75,7 @@ public class ConversationService {
     获取用户的会话列表
      */
     public List<ConversationDO> listConversation(String userId) {
-        List<ConversationDO> convs = conversationRepository.findByUserIdOrderByCreateTimeDesc(userId);
+        List<ConversationDO> convs = conversationRepository.findByUserIdOrderByUpdateTimeDesc(userId);
         if (CollectionUtils.isEmpty(convs))
             return Collections.emptyList();
         List<ConversationDO> tops = new ArrayList<>();

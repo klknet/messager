@@ -9,6 +9,8 @@ import com.konglk.ims.ws.ChatEndPoint;
 import com.konglk.ims.ws.PresenceManager;
 import com.konglk.model.Response;
 import com.konglk.model.ResponseStatus;
+import com.sun.org.apache.xpath.internal.operations.Bool;
+import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.time.DateUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationListener;
@@ -53,6 +55,7 @@ public class ResponseEventListener implements ApplicationListener<ResponseEvent>
             if (userIds != null) {
                 targetUsers.addAll(userIds);
             }
+//            List<String> offlineUsers = new ArrayList(targetUsers.size()/2);
             for (String id: targetUsers) {
                 //在线用户直接推送消息
                 if(presenceManager.getClient(id) != null) {
@@ -73,10 +76,23 @@ public class ResponseEventListener implements ApplicationListener<ResponseEvent>
                     }
                     ChatEndPoint client = presenceManager.getClient(id);
                     replyService.reply(client, response);
-                } else if (!cacheService.isOnline(id)) {
-//                    notifyService.saveNotify(id, JSON.toJSONString(response));
+                } else {
+//                    offlineUsers.add(id);
                 }
             }
+
+//            if (offlineUsers.size() > 0) {
+//                List<Boolean> status = cacheService.isOnline(offlineUsers);
+//                List<String> offline = new ArrayList<>();
+//                for (int i=0; i<offlineUsers.size(); i++) {
+//                    if (BooleanUtils.isFalse(status.get(i))) {
+//                        offline.add(offlineUsers.get(i));
+//                    }
+//                }
+//                if (offline.size() > 0) {
+//                    notifyService.saveAllNotify(offline, JSON.toJSONString(response));
+//                }
+//            }
         }
     }
 }
