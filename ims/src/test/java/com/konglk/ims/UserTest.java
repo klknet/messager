@@ -141,6 +141,11 @@ public class UserTest {
         configService.updateConfigValue(Constants.CONFIG_TEST_USER_SEQUENCE, base+n+"");
     }
 
+    @Test
+    public void updateRemark() {
+        userService.setFriendNotename("9bafc220-1f9a-47a6-937d-ce3d200a6380", "8e56093a-f065-48ec-b667-4f0d6e092ddc", "user-1000086");
+    }
+
     private String[] getUsername(int base, int n) {
         String[] usernames = new String[n];
         for (int i=0; i<n; i++) {

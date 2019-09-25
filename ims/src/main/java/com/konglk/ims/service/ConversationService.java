@@ -10,6 +10,7 @@ import com.konglk.ims.event.ResponseEvent;
 import com.konglk.ims.event.TopicProducer;
 import com.konglk.ims.repo.IConversationRepository;
 import com.konglk.ims.repo.IGroupChatRepository;
+import com.konglk.ims.repo.IUserRepository;
 import com.konglk.ims.util.SudokuGenerator;
 import com.konglk.model.Response;
 import com.mongodb.BasicDBObject;
@@ -58,6 +59,8 @@ public class ConversationService {
     private IGroupChatRepository IGroupChatRepository;
     @Autowired
     private NamedParameterJdbcTemplate jdbcTemplate;
+    @Autowired
+    private IUserRepository userRepository;
 
     /*
     创建会话
@@ -197,7 +200,7 @@ public class ConversationService {
      */
     public void joinConversation(String userId, String destId, String conversationId, Date createtime, Integer type) {
         ConversationDO conversationDO = new ConversationDO();
-        UserDO friend = userService.findByUserId(destId);
+        UserDO friend = userRepository.findByUserId(destId);
         conversationDO.setNotename(friend.getNickname());
         conversationDO.setUserId(userId);
         conversationDO.setDestId(destId);
@@ -338,8 +341,8 @@ public class ConversationService {
         } else {
             conversationDO.setConversationId(UUID.randomUUID().toString());
         }
-        UserDO friend = userService.findByUserId(destId);
-        UserDO userDO = userService.findByUserId(userId);
+        UserDO friend = userRepository.findByUserId(destId);
+        UserDO userDO = userRepository.findByUserId(userId);
 
         if(friend == null || userDO == null) {
             throw new IllegalArgumentException();

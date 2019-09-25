@@ -25,7 +25,7 @@ public interface IConversationRepository extends JpaRepository<ConversationDO, S
 
     @Modifying
     @Query("update ConversationDO cd set cd.notename=:name where userId=:userId and destId=:destId")
-    void updateConversationName(String userId, String destId, String name);
+    void updateConversationName(@Param("userId") String userId, @Param("destId") String destId, @Param("name") String name);
 
     @Modifying
     @Query("update ConversationDO cd set dnd=:dnd where conversationId=:conversationId and userId=:userId")

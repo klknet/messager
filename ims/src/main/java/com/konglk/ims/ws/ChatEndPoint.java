@@ -59,6 +59,7 @@ public class ChatEndPoint {
         this.userId = userId;
         if (!auth) {
             replyService.replyTicketError(this);
+            this.release();
             return;
         }
         logger.info("new connection active {}", this.nickname);

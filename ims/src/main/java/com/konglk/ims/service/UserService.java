@@ -103,7 +103,7 @@ public class UserService {
      */
     @Transactional
     public String updateAvatar(String userId, MultipartFile multipartFile) throws IOException {
-        UserDO userDO = findByUserId(userId);
+        UserDO userDO = userRepository.findByUserId(userId);
         if (userDO == null)
             throw new IllegalArgumentException();
         ObjectId objectId = gridFsTemplate.store(multipartFile.getInputStream(), multipartFile.getOriginalFilename(), multipartFile.getContentType());
@@ -137,15 +137,18 @@ public class UserService {
     /*
     修改备注
      */
+    @Transactional
     public void setFriendNotename(String userId, String destId, String notename) {
         if (StringUtils.isEmpty(userId) || StringUtils.isEmpty(destId) || StringUtils.isEmpty(notename))
             return;
         friendRepository.updateRemark(userId, destId, notename);
+        conversationService.updateConversationName(userId, destId, notename);
     }
 
     /*
     添加朋友
      */
+    @Transactional
     public void addFriend(String userId, String destId, String remark) {
         if (StringUtils.equals(userId, destId)) {
             throw new IllegalArgumentException("can't add yourself");
@@ -154,7 +157,6 @@ public class UserService {
             logger.warn("{} and {} already friends", userId, destId);
             return;
         }
-        Query query = new Query().addCriteria(Criteria.where("userId").is(userId));
         UserDO friend = userRepository.findByUserId(destId);
         if (friend == null) {
             return;
@@ -199,7 +201,11 @@ public class UserService {
     }
 
     public UserDO findByUserId(String userId) {
-        return userRepository.findByUserId(userId);
+        UserDO userDO = userRepository.findByUserId(userId);
+        String ticket = presenceManager.getTicket(userDO.getUserId());
+        userDO.setTicket(ticket);
+        userDO.setFriends(friendRepository.findByUserId(userId));
+        return userDO;
     }
 
     /*
@@ -214,7 +220,7 @@ public class UserService {
     模糊查询用户信息
      */
     public List<UserPO> findUser(String username) {
-        List<UserDO> userDOS = userRepository.findByUsernameLike(username+"*");
+        List<UserDO> userDOS = userRepository.findByUsernameLike(username+"%");
         return userDOS.stream().map(userDO -> {
             UserPO userPO = new UserPO();
             BeanUtils.copyProperties(userDO, userPO);

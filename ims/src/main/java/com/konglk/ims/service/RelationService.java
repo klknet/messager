@@ -7,6 +7,7 @@ import com.konglk.ims.domain.UserDO;
 import com.konglk.ims.event.ResponseEvent;
 import com.konglk.ims.event.TopicProducer;
 import com.konglk.ims.repo.IFriendRepository;
+import com.konglk.ims.repo.IUserRepository;
 import com.konglk.model.Response;
 import com.konglk.model.ResponseStatus;
 import org.slf4j.Logger;
@@ -37,12 +38,14 @@ public class RelationService {
     private TopicProducer topicProducer;
     @Autowired
     private IFriendRepository friendRepository;
+    @Autowired
+    private IUserRepository userRepository;
 
     /*
     请求添加朋友
      */
     public void requestFriend(String userId, String destId, String note) {
-        UserDO userDO = userService.findByUserId(userId);
+        UserDO userDO = userRepository.findByUserId(userId);
         if(userDO == null)
             throw new IllegalArgumentException("userId not exists!");
         List<FriendDO> friendDOS = friendRepository.findByUserId(userId);

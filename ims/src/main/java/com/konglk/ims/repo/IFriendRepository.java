@@ -20,7 +20,7 @@ public interface IFriendRepository extends JpaRepository<FriendDO, Long> {
     List<FriendDO> findByUserId(String userId);
 
     @Modifying
-    @Query("update FriendDO fd set remark=:remark where userId=:userId and destId=:destId")
+    @Query("update FriendDO fd set fd.remark=:remark where fd.userId=:userId and fd.destId=:destId")
     void updateRemark(@Param("userId")String userId, @Param("destId")String destId, @Param("remark")String remark);
 
     @Modifying

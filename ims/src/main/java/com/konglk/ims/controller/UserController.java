@@ -53,7 +53,7 @@ public class UserController {
 
     @GetMapping("/findById")
     public UserDO findById(String userId) {
-        return this.userService.findByUserId(userId);
+        return userService.findByUserId(userId);
     }
 
     @DeleteMapping("/delTicket")
@@ -66,7 +66,6 @@ public class UserController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void setNotename(String userId, String destId, String notename) {
         userService.setFriendNotename(userId, destId, notename);
-        conversationService.updateConversationName(userId, destId, notename);
         ResponseEvent event =
                 new ResponseEvent(new Response(com.konglk.model.ResponseStatus.U_UPDATE_NOTENAME, Response.USER), userId);
         topicProducer.sendNotifyMessage(event);
