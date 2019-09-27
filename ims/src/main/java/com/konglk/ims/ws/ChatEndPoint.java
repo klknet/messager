@@ -1,10 +1,11 @@
 package com.konglk.ims.ws;
 
 import com.alibaba.fastjson.JSON;
-import com.konglk.ims.service.ReplyService;
 import com.konglk.ims.util.RegExpUtil;
 import com.konglk.ims.util.SpringUtils;
 import com.konglk.model.Request;
+import com.konglk.model.Response;
+import com.konglk.model.ResponseStatus;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,13 +32,11 @@ public class ChatEndPoint {
     private Session session;
     private MessageHandler messageHandler;
     private PresenceManager presenceManager;
-    private ReplyService replyService;
 
     public ChatEndPoint() {
         this.nickname = ("client:" + connectionIds.getAndIncrement());
         this.messageHandler = SpringUtils.getBeanObj(MessageHandler.class);
         this.presenceManager = SpringUtils.getBeanObj(PresenceManager.class);
-        this.replyService = SpringUtils.getBeanObj(ReplyService.class);
         this.timestamp = System.currentTimeMillis();
         this.hash = new HashMap<>();
     }
@@ -58,15 +57,16 @@ public class ChatEndPoint {
         this.session = session;
         this.userId = userId;
         if (!auth) {
-            replyService.replyTicketError(this);
+            send(new Response(ResponseStatus.TICKET_ERROR, Response.USER));
             this.release();
             return;
         }
-        logger.info("new connection active {}", this.nickname);
+        logger.info("new connection active {} - {}", this.nickname, this.userId);
         this.auth = true;
         if (presenceManager.existsUser(userId)) {
             ChatEndPoint endPoint = presenceManager.getClient(userId);
             endPoint.setDropDown(true);
+            endPoint.auth = false;
             endPoint.release();
         }
         presenceManager.addClient(userId, this);
@@ -74,6 +74,9 @@ public class ChatEndPoint {
 
     @OnMessage
     public void incoming(String message) {
+        if (!auth) {
+            return;
+        }
         logger.debug(message);
         try {
             Request request = JSON.parseObject(message, Request.class);
@@ -89,12 +92,27 @@ public class ChatEndPoint {
         if (!dropDown) {
             presenceManager.removeClient(this.userId);
         }
-        logger.info("client {} leaves", this.nickname);
+        logger.info("client {}-{} leaves", this.nickname, this.userId);
     }
 
     @OnError
     public void onError(Throwable t) {
         logger.error("WebSocket error. "+this.nickname, t);
+    }
+
+    public void send(Response response) {
+        try {
+            synchronized (session) {
+                if (session.isOpen()) {
+                    session.getBasicRemote()
+                            .sendText(JSON.toJSONString(response));
+                    if (response.getType() == Response.USER)
+                        logger.info("{}-{} reply message - {}", nickname, userId, response.getMessage());
+                }
+            }
+        } catch (Exception e) {
+            logger.error("reply error", e.getMessage());
+        }
     }
 
     public int getConversationHash(String conversationId) {

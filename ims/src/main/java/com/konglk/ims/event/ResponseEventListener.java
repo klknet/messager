@@ -4,13 +4,10 @@ import com.alibaba.fastjson.JSON;
 import com.konglk.ims.cache.RedisCacheService;
 import com.konglk.ims.domain.MessageDO;
 import com.konglk.ims.service.NotifyService;
-import com.konglk.ims.service.ReplyService;
 import com.konglk.ims.ws.ChatEndPoint;
 import com.konglk.ims.ws.PresenceManager;
 import com.konglk.model.Response;
 import com.konglk.model.ResponseStatus;
-import com.sun.org.apache.xpath.internal.operations.Bool;
-import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.time.DateUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationListener;
@@ -21,8 +18,6 @@ import org.springframework.stereotype.Component;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-import java.util.Objects;
-import java.util.concurrent.ScheduledExecutorService;
 
 /**
  * Created by konglk on 2019/6/12.
@@ -32,8 +27,6 @@ public class ResponseEventListener implements ApplicationListener<ResponseEvent>
 
     @Autowired
     private PresenceManager presenceManager;
-    @Autowired
-    private ReplyService replyService;
     @Autowired
     private NotifyService notifyService;
     @Autowired
@@ -55,7 +48,6 @@ public class ResponseEventListener implements ApplicationListener<ResponseEvent>
             if (userIds != null) {
                 targetUsers.addAll(userIds);
             }
-//            List<String> offlineUsers = new ArrayList(targetUsers.size()/2);
             for (String id: targetUsers) {
                 //在线用户直接推送消息
                 if(presenceManager.getClient(id) != null) {
@@ -69,30 +61,15 @@ public class ResponseEventListener implements ApplicationListener<ResponseEvent>
                             public void run() {
                                 Object msgResponse = cacheService.getMsgResponse(messageDO.getMessageId(), id);
                                 if (msgResponse != null) {
-                                    replyService.reply(presenceManager.getClient(id), response);
+                                    presenceManager.getClient(id).send(response);
                                 }
                             }
                         }, DateUtils.addSeconds(new Date(), 10));
                     }
                     ChatEndPoint client = presenceManager.getClient(id);
-                    replyService.reply(client, response);
-                } else {
-//                    offlineUsers.add(id);
+                    client.send(response);
                 }
             }
-
-//            if (offlineUsers.size() > 0) {
-//                List<Boolean> status = cacheService.isOnline(offlineUsers);
-//                List<String> offline = new ArrayList<>();
-//                for (int i=0; i<offlineUsers.size(); i++) {
-//                    if (BooleanUtils.isFalse(status.get(i))) {
-//                        offline.add(offlineUsers.get(i));
-//                    }
-//                }
-//                if (offline.size() > 0) {
-//                    notifyService.saveAllNotify(offline, JSON.toJSONString(response));
-//                }
-//            }
         }
     }
 }

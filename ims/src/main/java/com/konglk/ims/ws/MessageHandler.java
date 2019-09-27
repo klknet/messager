@@ -7,7 +7,6 @@ import com.konglk.ims.domain.MessageDO;
 import com.konglk.ims.event.TopicProducer;
 import com.konglk.ims.service.ConversationService;
 import com.konglk.ims.service.MessageService;
-import com.konglk.ims.service.ReplyService;
 import com.konglk.model.Request;
 import com.konglk.model.Response;
 import com.konglk.model.ResponseStatus;
@@ -31,8 +30,6 @@ public class MessageHandler {
     @Autowired
     private TopicProducer producer;
     @Autowired
-    private ReplyService replyService;
-    @Autowired
     private MessageService messageService;
     @Autowired
     private ConversationService conversationService;
@@ -45,7 +42,7 @@ public class MessageHandler {
         switch (request.getType()) {
             case 0:  //ping
                 client.setTimestamp(System.currentTimeMillis());
-                replyService.replyPong(client);
+                client.send(new Response(200, null, "pong", Response.HEART));
                 break;
             case 1:  //ack
                 String msgId = request.getData();
@@ -64,7 +61,7 @@ public class MessageHandler {
                 executor.submit(()->incrementUnread(m));
                 //消息发送到mq
                 producer.sendChatMessage(request.getData(), client.getConversationHash(messageDO.getConversationId()));
-                replyService.reply(client, new Response(ResponseStatus.M_ACK, Response.MESSAGE, messageDO.getMessageId()));
+                client.send(new Response(ResponseStatus.M_ACK, Response.MESSAGE, messageDO.getMessageId()));
                 break;
         }
     }

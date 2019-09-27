@@ -48,6 +48,10 @@ public class PresenceManager {
         cacheService.delUserTicket(userId);
     }
 
+    public boolean isOnline(String userId) {
+        return cacheService.isOnline(userId);
+    }
+
     public Map<String, ChatEndPoint> getClientMap() {
         return clientMap;
     }
