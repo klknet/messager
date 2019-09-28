@@ -24,7 +24,7 @@ public interface IFriendRepository extends JpaRepository<FriendDO, Long> {
     void updateRemark(@Param("userId")String userId, @Param("destId")String destId, @Param("remark")String remark);
 
     @Modifying
-    @Query("update FriendDO fd set profileUrl=:url where userId=:userId")
+    @Query("update FriendDO fd set profileUrl=:url where destId=:userId")
     void updateAvatar(@Param("userId")String userId, @Param("url")String url);
 
 }
