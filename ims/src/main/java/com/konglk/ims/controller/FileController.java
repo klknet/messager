@@ -71,8 +71,12 @@ public class FileController {
             time = fileMeta.getUploadDate();
         }else {
             gridFSFile = gridFsTemplate.findOne(Query.query(Criteria.where("_id").is(id)));
+            if(gridFSFile == null)
+                return;
             md5 = gridFSFile.getMD5();
             time = gridFSFile.getUploadDate().toString();
+            fileMeta = new FileMeta(gridFSFile.getMetadata().getString("_contentType"), gridFSFile.getLength(), gridFSFile.getMD5(), gridFSFile.getUploadDate().toString());
+            cacheService.setModifiedTime(id, JSON.toJSONString(fileMeta));
         }
         // 图片没有变化，返回304
         if (md5.equals(etag) && time.equals(lastModified)) {
