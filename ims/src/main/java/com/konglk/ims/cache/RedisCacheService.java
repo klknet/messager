@@ -102,7 +102,7 @@ public class RedisCacheService {
     图片最后修改时间
      */
     public void setModifiedTime(String id, String val) {
-       redisTemplate.opsForValue().set(Constants.NOT_MODIFIED+":"+id, val, 7, TimeUnit.DAYS);
+       redisTemplate.opsForValue().set(Constants.NOT_MODIFIED+":"+id, val, 1, TimeUnit.DAYS);
     }
 
     public FileMeta getModifiedTime(String id) {
