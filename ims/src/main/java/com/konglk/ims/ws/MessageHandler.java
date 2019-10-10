@@ -55,6 +55,7 @@ public class MessageHandler {
                 if (messageService.existsByMsgId(messageDO.getMessageId())){
                     return;
                 }
+                logger.info("receive msg time {}-{}-{}", messageDO.getMessageId(), System.currentTimeMillis(), messageDO.getCreateTime().getTime());
                 messageService.insert(messageDO);
                 conversationService.updateConversation(messageDO);
                 final MessageDO m = messageDO;
