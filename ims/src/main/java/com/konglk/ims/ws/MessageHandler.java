@@ -55,7 +55,7 @@ public class MessageHandler {
                 if (messageService.existsByMsgId(messageDO.getMessageId())){
                     return;
                 }
-                logger.info("receive msg time {}-{}-{}", messageDO.getMessageId(), System.currentTimeMillis(), messageDO.getCreateTime().getTime());
+                logger.info("send msg time {}-{}", messageDO.getMessageId(), messageDO.getCreateTime().getTime());
                 messageService.insert(messageDO);
                 conversationService.updateConversation(messageDO);
                 final MessageDO m = messageDO;
@@ -63,6 +63,7 @@ public class MessageHandler {
                 //消息发送到mq
                 producer.sendChatMessage(request.getData(), client.getConversationHash(messageDO.getConversationId()));
                 client.send(new Response(ResponseStatus.M_ACK, Response.MESSAGE, messageDO.getMessageId()));
+                logger.info("send msg cost time {}", System.currentTimeMillis()-messageDO.getCreateTime().getTime());
                 break;
         }
     }

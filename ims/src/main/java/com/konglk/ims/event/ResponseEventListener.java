@@ -58,12 +58,8 @@ public class ResponseEventListener implements ApplicationListener<ResponseEvent>
                         String data = response.getData();
                         MessageDO messageDO = JSON.parseObject(data, MessageDO.class);
                         cacheService.setMsgResponse(messageDO.getMessageId(), id);
-                        long cur = System.currentTimeMillis();
-                        logger.info("send msg time {}-{}", messageDO.getMessageId(), cur);
-                        //超过500ms的消息，记录为慢消费消息
-                        if (cur - messageDO.getCreateTime().getTime() > 500) {
-                            logger.warn("slow consume message. {}", messageDO.getMessageId());
-                        }
+
+
                         //10秒无ack会重传
                         taskScheduler.schedule(new Runnable() {
                             @Override
