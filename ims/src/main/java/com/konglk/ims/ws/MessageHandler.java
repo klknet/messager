@@ -71,12 +71,12 @@ public class MessageHandler {
         }
     }
 
-    @Scheduled(cron = "0 */32 * * * *")
+    @Scheduled(cron = "*/32 * * * * *")
     public void persistMsg() {
         Deque<MessageDO> msgDOs = new LinkedList<>(msgQueue);
         if (msgDOs.size() > 0) {
             msgQueue.removeAll(msgDOs);
-            messageRepository.saveAll(msgDOs);
+            messageService.insertAll(msgDOs);
             conversationService.updateConversation(msgDOs.peekLast());
             incrementUnread(msgDOs);
         }

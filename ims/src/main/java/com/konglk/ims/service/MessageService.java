@@ -92,6 +92,11 @@ public class MessageService {
         messageRepository.save(messageDO);
     }
 
+    @Transactional
+    public void insertAll(Collection<MessageDO> messageDOS) {
+        messageRepository.saveAll(messageDOS);
+    }
+
     public void failedMessage(FailedMessageDO msg) {
         mongoTemplate.insert(msg);
     }
