@@ -9,21 +9,16 @@ import com.konglk.ims.event.TopicProducer;
 import com.konglk.ims.model.FileDetail;
 import com.konglk.ims.repo.IMessageRepository;
 import com.konglk.ims.util.SpringUtils;
-import com.konglk.ims.ws.PresenceManager;
 import com.konglk.model.Response;
 import com.konglk.model.ResponseStatus;
 import com.mongodb.client.gridfs.model.GridFSFile;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
-import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.data.mongodb.gridfs.GridFsTemplate;
 import org.springframework.jdbc.core.BeanPropertyRowMapper;
-import org.springframework.jdbc.core.SingleColumnRowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Service;
@@ -52,7 +47,6 @@ public class MessageService {
     private TopicProducer topicProducer;
     @Autowired
     private NamedParameterJdbcTemplate jdbcTemplate;
-
 
     /**
      *

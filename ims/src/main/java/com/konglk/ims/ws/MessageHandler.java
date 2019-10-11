@@ -2,11 +2,8 @@ package com.konglk.ims.ws;
 
 import com.alibaba.fastjson.JSON;
 import com.konglk.ims.cache.RedisCacheService;
-import com.konglk.ims.domain.GroupChatDO;
 import com.konglk.ims.domain.MessageDO;
 import com.konglk.ims.event.TopicProducer;
-import com.konglk.ims.service.ConversationService;
-import com.konglk.ims.service.MessageService;
 import com.konglk.model.Request;
 import com.konglk.model.Response;
 import com.konglk.model.ResponseStatus;
@@ -16,12 +13,11 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Component;
-import org.springframework.util.CollectionUtils;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Component
 public class MessageHandler {
@@ -31,13 +27,10 @@ public class MessageHandler {
     @Autowired
     private TopicProducer producer;
     @Autowired
-    private MessageService messageService;
-    @Autowired
-    private ConversationService conversationService;
-    @Autowired
     private ThreadPoolTaskExecutor executor;
     @Autowired
     private RedisCacheService redisCacheService;
+    private List<MessageDO> msgQueue = new ArrayList<>(64);
 
     public void process(Request request, ChatEndPoint client) throws IOException {
         switch (request.getType()) {
@@ -56,17 +49,8 @@ public class MessageHandler {
                 if(messageDO.getCreateTime() == null) {
                     messageDO.setCreateTime(new Date());
                 }
-                final MessageDO m = messageDO;
-                //异步执行入库操作，增加消息的响应速度
-                executor.submit(()->{
-                    try {
-                        messageService.insert(messageDO);
-                        conversationService.updateConversation(messageDO);
-                        incrementUnread(m);
-                    } catch (Exception e) {
-                        logger.error("error persist message, {}", messageDO.getContent());
-                    }
-                });
+                //异步执行入库操作，增加消息的响应速度， 可批量处理
+                msgQueue.add(messageDO);
                 //消息发送到mq
                 producer.sendChatMessage(request.getData(), client.getConversationHash(messageDO.getConversationId()));
                 client.send(new Response(ResponseStatus.M_ACK, Response.MESSAGE, messageDO.getMessageId()));
@@ -77,17 +61,9 @@ public class MessageHandler {
         }
     }
 
-    protected void incrementUnread(MessageDO messageDO) {
-        if(messageDO.getChatType() == 0) {
-            redisCacheService.incUnreadNum(messageDO.getDestId(), messageDO.getConversationId(), 1);
-        }else {
-            List<GroupChatDO> groupChat = conversationService.findGroupChat(messageDO.getDestId());
-            if(groupChat != null && !CollectionUtils.isEmpty(groupChat)) {
-                List<String> userIds = groupChat.stream()
-                        .filter(member -> !member.getUserId().equals(messageDO.getUserId())) //过滤自己
-                        .map(member -> member.getUserId()).collect(Collectors.toList());
-                redisCacheService.incUnreadNum(userIds, messageDO.getConversationId(), 1);
-            }
-        }
+
+
+    public List<MessageDO> getMsgQueue() {
+        return msgQueue;
     }
 }
