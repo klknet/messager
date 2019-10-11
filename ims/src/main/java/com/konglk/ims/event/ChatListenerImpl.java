@@ -37,13 +37,14 @@ public class ChatListenerImpl implements MessageListener {
             MessageDO messageDO = null;
             String text = null;
             try {
+                long ts = message.getJMSTimestamp();
                 text = textMessage.getText();
                 messageDO = JSON.parseObject(text, MessageDO.class);
 
                 long cur = System.currentTimeMillis();
                 //超过500ms的消息，记录为慢消费消息
-                if (cur - messageDO.getCreateTime().getTime() > 500) {
-                    logger.warn("slow consume message. {}-{}", messageDO.getMessageId(), cur - messageDO.getCreateTime().getTime());
+                if (cur - ts > 500) {
+                    logger.warn("slow consume message. {}-{}", messageDO.getMessageId(), cur - ts);
                 }
                 //消息处理事件
                 messageService.notifyAll(messageDO, new Response(ResponseStatus.M_TRANSFER_MESSAGE, Response.MESSAGE, text));

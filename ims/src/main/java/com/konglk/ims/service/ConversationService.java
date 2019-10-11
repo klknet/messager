@@ -244,8 +244,7 @@ public class ConversationService {
 
     @Transactional
     public void updateConversation(MessageDO messageDO) {
-        ConversationDO conv = findByUserIdAndDestId(messageDO.getUserId(), messageDO.getDestId());
-        if (new Integer(0).equals(conv.getType())) {
+        if (new Integer(0).equals(messageDO.getChatType())) {
             // 如果一方没有会话，则创建会话
             if (!this.existConversation(messageDO.getDestId(), messageDO.getUserId())) {
                 this.joinConversation(messageDO.getDestId(), messageDO.getUserId(),
@@ -253,7 +252,7 @@ public class ConversationService {
             }
             this.updateLastTime(messageDO.getConversationId(), null, messageDO.getCreateTime(), messageDO.getType(), messageDO.getContent());
         } else {
-            updateGroupChat(conv.getDestId(), messageDO.getType(), messageDO.getContent());
+            updateGroupChat(messageDO.getDestId(), messageDO.getType(), messageDO.getContent());
         }
     }
 

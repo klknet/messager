@@ -19,6 +19,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
 import java.io.IOException;
+import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -52,18 +53,26 @@ public class MessageHandler {
                 MessageDO messageDO = JSON.parseObject(request.getData(), MessageDO.class);
                 if (StringUtils.isEmpty(messageDO.getContent()))
                     return;
-                if (messageService.existsByMsgId(messageDO.getMessageId())){
-                    return;
+                if(messageDO.getCreateTime() == null) {
+                    messageDO.setCreateTime(new Date());
                 }
-                logger.info("send msg time {}-{}", messageDO.getMessageId(), messageDO.getCreateTime().getTime());
-                messageService.insert(messageDO);
-                conversationService.updateConversation(messageDO);
                 final MessageDO m = messageDO;
-                executor.submit(()->incrementUnread(m));
+                //异步执行入库操作，增加消息的响应速度
+                executor.submit(()->{
+                    try {
+                        messageService.insert(messageDO);
+                        conversationService.updateConversation(messageDO);
+                        incrementUnread(m);
+                    } catch (Exception e) {
+                        logger.error("error persist message, {}", messageDO.getContent());
+                    }
+                });
                 //消息发送到mq
                 producer.sendChatMessage(request.getData(), client.getConversationHash(messageDO.getConversationId()));
                 client.send(new Response(ResponseStatus.M_ACK, Response.MESSAGE, messageDO.getMessageId()));
-                logger.info("send msg cost time {}", System.currentTimeMillis()-messageDO.getCreateTime().getTime());
+                long diff = System.currentTimeMillis()-messageDO.getCreateTime().getTime();
+                if (diff > 500)
+                    logger.info("slow send msg cost time {}", diff);
                 break;
         }
     }
