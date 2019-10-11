@@ -2,22 +2,28 @@ package com.konglk.ims.ws;
 
 import com.alibaba.fastjson.JSON;
 import com.konglk.ims.cache.RedisCacheService;
+import com.konglk.ims.domain.GroupChatDO;
 import com.konglk.ims.domain.MessageDO;
 import com.konglk.ims.event.TopicProducer;
+import com.konglk.ims.repo.IMessageRepository;
+import com.konglk.ims.service.ConversationService;
+import com.konglk.ims.service.MessageService;
 import com.konglk.model.Request;
 import com.konglk.model.Response;
 import com.konglk.model.ResponseStatus;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.MutableTriple;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+import org.springframework.util.CollectionUtils;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
+import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.stream.Collectors;
 
 @Component
 public class MessageHandler {
@@ -27,10 +33,14 @@ public class MessageHandler {
     @Autowired
     private TopicProducer producer;
     @Autowired
-    private ThreadPoolTaskExecutor executor;
+    private MessageService messageService;
+    @Autowired
+    private IMessageRepository messageRepository;
+    @Autowired
+    private ConversationService conversationService;
     @Autowired
     private RedisCacheService redisCacheService;
-    private List<MessageDO> msgQueue = new ArrayList<>(64);
+    private Deque<MessageDO> msgQueue = new ConcurrentLinkedDeque<>();
 
     public void process(Request request, ChatEndPoint client) throws IOException {
         switch (request.getType()) {
@@ -61,9 +71,56 @@ public class MessageHandler {
         }
     }
 
-
-
-    public List<MessageDO> getMsgQueue() {
-        return msgQueue;
+    @Scheduled(cron = "0 */32 * * * *")
+    public void persistMsg() {
+        Deque<MessageDO> msgDOs = new LinkedList<>(msgQueue);
+        if (msgDOs.size() > 0) {
+            msgQueue.removeAll(msgDOs);
+            messageRepository.saveAll(msgDOs);
+            conversationService.updateConversation(msgDOs.peekLast());
+            incrementUnread(msgDOs);
+        }
     }
+
+    protected void incrementUnread(Deque<MessageDO> messageDOs) {
+        Map<String, Map<String, Long>> singleInc = new HashMap<>();
+        Map<String, MutableTriple<String, String, Long>> groupInc = new HashMap<>();
+        for (MessageDO messageDO: messageDOs) {
+            if (messageDO.getChatType() == 0) {
+                if (singleInc.containsKey(messageDO.getDestId())) {
+                    Map<String, Long> map = singleInc.get(messageDO.getDestId());
+                    map.put(messageDO.getConversationId(), map.get(messageDO.getConversationId()) + 1L);
+                } else {
+                    Map<String, Long> map = new HashMap<>();
+                    map.put(messageDO.getConversationId(), 1L);
+                    singleInc.put(messageDO.getDestId(), map);
+                }
+            } else {
+                if (groupInc.containsKey(messageDO.getDestId())) {
+                    MutableTriple<String, String, Long> triple = groupInc.get(messageDO.getDestId());
+                    triple.setRight(triple.getRight() + 1L);
+                }else {
+                    MutableTriple<String, String, Long> triple = new MutableTriple<>(messageDO.getConversationId(), messageDO.getUserId(), 1L);
+                    groupInc.put(messageDO.getDestId(), triple);
+                }
+            }
+        }
+        for (String destId: singleInc.keySet()) {
+            for (String conversationId: singleInc.get(destId).keySet()) {
+                redisCacheService.incUnreadNum(destId, conversationId, singleInc.get(destId).get(conversationId));
+            }
+        }
+
+        for (String destId: groupInc.keySet()) {
+            MutableTriple<String, String, Long> triple = groupInc.get(destId);
+            List<GroupChatDO> groupChat = conversationService.findGroupChat(destId);
+            if(groupChat != null && !CollectionUtils.isEmpty(groupChat)) {
+                List<String> userIds = groupChat.stream()
+                        .filter(member -> !member.getUserId().equals(triple.getMiddle())) //过滤自己
+                        .map(member -> member.getUserId()).collect(Collectors.toList());
+                redisCacheService.incUnreadNum(userIds, triple.getLeft(), triple.getRight());
+            }
+        }
+    }
+
 }
