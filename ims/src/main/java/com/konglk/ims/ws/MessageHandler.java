@@ -77,14 +77,13 @@ public class MessageHandler {
         if (msgDOs.size() > 0) {
             msgQueue.removeAll(msgDOs);
             messageService.insertAll(msgDOs);
+            incrementUnread(msgDOs);
             //更新最后一条消息的内容、时间
             Map<String, MessageDO> convMap = msgDOs.stream().collect(Collectors.groupingBy(MessageDO::getConversationId,
                     Collectors.collectingAndThen(Collectors.toList(), v -> v.get(v.size()-1))));
             for (String cid: convMap.keySet()) {
                 conversationService.updateConversation(convMap.get(cid));
             }
-            conversationService.updateConversation(msgDOs.peekLast());
-            incrementUnread(msgDOs);
         }
     }
 
