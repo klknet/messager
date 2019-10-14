@@ -61,9 +61,9 @@ public class MessageHandler {
                 }
                 //异步执行入库操作，增加消息的响应速度， 可批量处理
                 msgQueue.add(messageDO);
+                client.send(new Response(ResponseStatus.M_ACK, Response.MESSAGE, messageDO.getMessageId()));
                 //消息发送到mq
                 producer.sendChatMessage(request.getData(), client.getConversationHash(messageDO.getConversationId()));
-                client.send(new Response(ResponseStatus.M_ACK, Response.MESSAGE, messageDO.getMessageId()));
                 long diff = System.currentTimeMillis()-messageDO.getCreateTime().getTime();
                 if (diff > 500)
                     logger.info("slow send msg cost time {}", diff);
@@ -73,8 +73,8 @@ public class MessageHandler {
 
     @Scheduled(cron = "*/32 * * * * *")
     public void persistMsg() {
-        Deque<MessageDO> msgDOs = new LinkedList<>(msgQueue);
-        if (msgDOs.size() > 0) {
+        if (msgQueue.size() > 0) {
+            Deque<MessageDO> msgDOs = new LinkedList<>(msgQueue);
             msgQueue.removeAll(msgDOs);
             messageService.insertAll(msgDOs);
             incrementUnread(msgDOs);
