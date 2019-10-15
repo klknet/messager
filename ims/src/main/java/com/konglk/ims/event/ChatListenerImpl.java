@@ -1,6 +1,7 @@
 package com.konglk.ims.event;
 
 import com.alibaba.fastjson.JSON;
+import com.konglk.ims.cache.Constants;
 import com.konglk.ims.domain.FailedMessageDO;
 import com.konglk.ims.domain.MessageDO;
 import com.konglk.ims.service.MessageService;
@@ -43,7 +44,7 @@ public class ChatListenerImpl implements MessageListener {
 
                 long cur = System.currentTimeMillis();
                 //超过500ms的消息，记录为慢消费消息
-                if (cur - ts > 500) {
+                if (cur - ts > Constants.INTERVAL) {
                     logger.warn("slow consume message. {}-{}", messageDO.getMessageId(), cur - ts);
                 }
                 //消息处理事件

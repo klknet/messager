@@ -1,6 +1,7 @@
 package com.konglk.ims.ws;
 
 import com.alibaba.fastjson.JSON;
+import com.konglk.ims.cache.Constants;
 import com.konglk.ims.cache.RedisCacheService;
 import com.konglk.ims.domain.GroupChatDO;
 import com.konglk.ims.domain.MessageDO;
@@ -63,13 +64,13 @@ public class MessageHandler {
                 msgQueue.add(messageDO);
                 long receiveTs = System.currentTimeMillis();
                 long diff = receiveTs-messageDO.getCreateTime().getTime();
-                if (diff > 500) {
+                if (diff > Constants.INTERVAL) {
                     logger.info("slow transfer msg on network cost time {}", diff);
                 }
                 //消息发送到mq
                 producer.sendChatMessage(request.getData(), client.getConversationHash(messageDO.getConversationId()));
                 diff = System.currentTimeMillis()-receiveTs;
-                if (diff > 500) {
+                if (diff > Constants.INTERVAL) {
                     logger.info("slow send msg to amq cost time {}", diff);
                 }
                 client.send(new Response(ResponseStatus.M_ACK, Response.MESSAGE, messageDO.getMessageId()));

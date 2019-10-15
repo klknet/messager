@@ -20,4 +20,6 @@ public class Constants {
     public static String CONFIG_TEST_USER_NUMBER = "test_user_number";
     public static String CONFIG_TEST_USER_SEQUENCE = "test_user_sequence";
 
+    public static long INTERVAL = 600L;
+
 }
