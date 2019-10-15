@@ -61,11 +61,16 @@ public class MessageHandler {
                 }
                 //异步执行入库操作，增加消息的响应速度， 可批量处理
                 msgQueue.add(messageDO);
+                long receiveTs = System.currentTimeMillis();
+                long diff = receiveTs-messageDO.getCreateTime().getTime();
+                if (diff > 500) {
+                    logger.info("slow transfer msg on network cost time {}", diff);
+                }
                 //消息发送到mq
                 producer.sendChatMessage(request.getData(), client.getConversationHash(messageDO.getConversationId()));
-                long diff = System.currentTimeMillis()-messageDO.getCreateTime().getTime();
+                diff = System.currentTimeMillis()-receiveTs;
                 if (diff > 500) {
-                    logger.info("slow send msg cost time {}", diff);
+                    logger.info("slow send msg to amq cost time {}", diff);
                 }
                 client.send(new Response(ResponseStatus.M_ACK, Response.MESSAGE, messageDO.getMessageId()));
                 break;
