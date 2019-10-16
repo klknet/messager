@@ -36,8 +36,6 @@ public class MessageHandler {
     @Autowired
     private MessageService messageService;
     @Autowired
-    private IMessageRepository messageRepository;
-    @Autowired
     private ConversationService conversationService;
     @Autowired
     private RedisCacheService redisCacheService;
@@ -93,6 +91,21 @@ public class MessageHandler {
             }
         }
     }
+
+    /**
+     * 返回队列中的msg
+     * @param msgId
+     * @return
+     */
+    public MessageDO getQueueMsg(String msgId) {
+        for(MessageDO msg: msgQueue) {
+            if (msg.getMessageId().equals(msgId)) {
+                return msg;
+            }
+        }
+        return null;
+    }
+
 
     protected void incrementUnread(Deque<MessageDO> messageDOs) {
         Map<String, Map<String, Long>> singleInc = new HashMap<>();

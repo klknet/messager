@@ -9,10 +9,12 @@ import com.konglk.ims.event.TopicProducer;
 import com.konglk.ims.model.FileDetail;
 import com.konglk.ims.repo.IMessageRepository;
 import com.konglk.ims.util.SpringUtils;
+import com.konglk.ims.ws.MessageHandler;
 import com.konglk.model.Response;
 import com.konglk.model.ResponseStatus;
 import com.mongodb.client.gridfs.model.GridFSFile;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.time.DateUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
@@ -21,6 +23,7 @@ import org.springframework.data.mongodb.gridfs.GridFsTemplate;
 import org.springframework.jdbc.core.BeanPropertyRowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -47,6 +50,10 @@ public class MessageService {
     private TopicProducer topicProducer;
     @Autowired
     private NamedParameterJdbcTemplate jdbcTemplate;
+    @Autowired
+    private MessageHandler messageHandler;
+    @Autowired
+    private ThreadPoolTaskScheduler taskScheduler;
 
     /**
      *
@@ -104,19 +111,25 @@ public class MessageService {
     /*
     撤回消息
      */
-    @Transactional
     public void revocation(String userId, String msgId) {
-        MessageDO message = messageRepository.findByMessageIdAndUserId(msgId, userId);
-        if (msgId == null || !userId.equals(message.getUserId()))
-            throw new IllegalArgumentException();
+        MessageDO message = messageHandler.getQueueMsg(msgId);
+        if (message == null) {
+            message = messageRepository.findByMessageIdAndUserId(msgId, userId);
+            if (msgId == null || !userId.equals(message.getUserId()))
+                throw new IllegalArgumentException();
+        }
         long time = message.getCreateTime().getTime();
         long now = System.currentTimeMillis();
         //超过2分钟的不让撤回
         if (now-time > 2*60*1000L)
             return;
-        //更新消息会话类型
-        updateMsgType(userId, msgId, 5);
-        conversationService.updateLastTime(message.getConversationId(), null, null, 5, null);
+        final MessageDO m = message;
+        taskScheduler.schedule(() -> {
+                //更新消息会话类型
+            updateMsgType(userId, msgId, 5);
+            conversationService.updateLastTime(m.getConversationId(), null, null, 5, null);
+        }, DateUtils.addSeconds(new Date(), 32));
+
         //通知客户端消息变动
         Response response = new Response(ResponseStatus.M_REVOCATION, Response.MESSAGE, JSON.toJSONString(message));
         notifyAll(message, response);
@@ -172,9 +185,11 @@ public class MessageService {
         return messageRepository.isLastMsg(conversationId, userId+"%", date) == 1L;
     }
 
-    @Transactional
     public void delByMsgId(String msgId, String userId) {
-        MessageDO messageDO = findByMsgId(msgId);
+        MessageDO messageDO = messageHandler.getQueueMsg(msgId);
+        if (messageDO == null) {
+            messageDO = findByMsgId(msgId);
+        }
         boolean lastMsg = isLastMessage(messageDO.getConversationId(), userId, messageDO.getCreateTime());
         //最后一条消息要同步更新会话
         if (lastMsg) {
@@ -193,12 +208,16 @@ public class MessageService {
 
         if (messageDO.getUserId().equals(userId)) {
             //删除自己发送的消息
-            updateMsgType(userId, msgId, -1);
+            taskScheduler.schedule(() -> {
+                updateMsgType(userId, msgId, -1);
+            }, DateUtils.addSeconds(new Date(), 32));
             notifyAll(messageDO, new Response(ResponseStatus.M_DELETE_MESSAGE, Response.MESSAGE, JSON.toJSONString(messageDO)));
 
         }else {
             //删除对方的消息
-            addToDeleteList(msgId, userId);
+            taskScheduler.schedule(() -> {
+                addToDeleteList(msgId, userId);
+            }, DateUtils.addSeconds(new Date(), 32));
             topicProducer.sendNotifyMessage(new ResponseEvent(
                     new Response(ResponseStatus.M_DELETE_MESSAGE, Response.MESSAGE, JSON.toJSONString(messageDO)),
                     userId));
