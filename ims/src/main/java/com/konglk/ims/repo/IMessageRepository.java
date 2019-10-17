@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.data.repository.query.Param;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Date;
 
@@ -18,10 +19,12 @@ public interface IMessageRepository extends JpaRepository<MessageDO, String> {
     boolean existsByMessageId(String messageId);
     MessageDO findByMessageIdAndUserId(String messageId, String userId);
     MessageDO findByMessageId(String messageId);
+    @Transactional
     @Modifying
     @Query("update MessageDO md set type=:type where messageId=:messageId and userId=:userId")
     void updateMsgType(@Param("messageId") String messageId, @Param("userId") String userId, @Param("type") int type);
 
+    @Transactional
     @Modifying
     @Query("update MessageDO md set delete_ids=:deleteIds where message_id=:messageId and user_id=:userId")
     void updateDeleteIds(@Param("messageId") String messageId, @Param("userId") String userId, @Param("deleteIds") String deleteIds);

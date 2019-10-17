@@ -126,7 +126,7 @@ public class MessageService {
         final MessageDO m = message;
         taskScheduler.schedule(() -> {
                 //更新消息会话类型
-            updateMsgType(userId, msgId, 5);
+            messageRepository.updateMsgType(msgId, userId, 5);
             conversationService.updateLastTime(m.getConversationId(), null, null, 5, null);
         }, DateUtils.addSeconds(new Date(), 32));
 
@@ -187,6 +187,7 @@ public class MessageService {
 
     public void delByMsgId(String msgId, String userId) {
         MessageDO messageDO = messageHandler.getQueueMsg(msgId);
+
         if (messageDO == null) {
             messageDO = findByMsgId(msgId);
         }
@@ -209,7 +210,7 @@ public class MessageService {
         if (messageDO.getUserId().equals(userId)) {
             //删除自己发送的消息
             taskScheduler.schedule(() -> {
-                updateMsgType(userId, msgId, -1);
+                messageRepository.updateMsgType(msgId, userId, -1);
             }, DateUtils.addSeconds(new Date(), 32));
             notifyAll(messageDO, new Response(ResponseStatus.M_DELETE_MESSAGE, Response.MESSAGE, JSON.toJSONString(messageDO)));
 
