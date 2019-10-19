@@ -80,7 +80,7 @@ public class MessageService {
         params.addValue("cid", cid);
         sql += " and conversation_id=:cid and type>=0 and (delete_ids is null or delete_ids not like :deleteIds)";
         sql += " order by create_time desc limit 0, 32";
-        params.addValue("deleteIds", userId+"%");
+        params.addValue("deleteIds", "%"+userId+"%");
         List<MessageDO> messageDOS = jdbcTemplate.query(sql, params, new BeanPropertyRowMapper<>(MessageDO.class));
         messageDOS.forEach(m -> {
             if (new Integer(2).equals(m.getType())) {
@@ -162,7 +162,7 @@ public class MessageService {
             unique.add(userId);
             deleteIds = StringUtils.join(unique, ",");
         }
-        messageRepository.updateDeleteIds(msgId, userId, deleteIds);
+        messageRepository.updateDeleteIds(msgId, deleteIds);
     }
 
     public MessageDO findByMsgId(String msgId) {

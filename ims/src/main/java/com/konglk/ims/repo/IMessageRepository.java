@@ -26,8 +26,8 @@ public interface IMessageRepository extends JpaRepository<MessageDO, String> {
 
     @Transactional
     @Modifying
-    @Query("update MessageDO md set delete_ids=:deleteIds where message_id=:messageId and user_id=:userId")
-    void updateDeleteIds(@Param("messageId") String messageId, @Param("userId") String userId, @Param("deleteIds") String deleteIds);
+    @Query("update MessageDO md set delete_ids=:deleteIds where message_id=:messageId")
+    void updateDeleteIds(@Param("messageId") String messageId, @Param("deleteIds") String deleteIds);
 
     MessageDO findFirstByConversationIdAndCreateTimeBefore(String cid, Date time);
 
