@@ -3,8 +3,10 @@ package com.konglk.ims.controller;
 import com.konglk.ims.cache.RedisCacheService;
 import com.konglk.ims.service.MessageService;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.time.DateUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.web.bind.annotation.*;
 
 import java.text.DateFormat;
@@ -23,6 +25,8 @@ public class MessageController {
     private MessageService messageService;
     @Autowired
     private RedisCacheService redisCacheService;
+    @Autowired
+    private ThreadPoolTaskScheduler taskScheduler;
 
     /*
     取晚于convCreateTime后早于lastMsgCreateTime消息
@@ -46,7 +50,9 @@ public class MessageController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @DeleteMapping("/delUnread")
     public void delUnread(String userId, String id) {
-        redisCacheService.delUnreadNum(userId, id);
+        taskScheduler.schedule(()-> {
+            redisCacheService.delUnreadNum(userId, id);
+        }, DateUtils.addSeconds(new Date(), 32));
     }
 
     @DeleteMapping("/delMsg")
