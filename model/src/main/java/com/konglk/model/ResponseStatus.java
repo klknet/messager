@@ -15,8 +15,10 @@ public enum ResponseStatus {
     M_TRANSFER_MESSAGE(70001, "message transfer"), //转发消息
     M_REVOCATION(70002, "message revocation"), //撤回消息
     M_DELETE_MESSAGE(70003, "message delete"), //删除消息
-    M_UPDATE_CONVERSATION(70004, "update conversation content"),//更新会话显示最后一条消息
     M_ACK(70005, "ack"),//ack
+
+    C_UPDATE_CONVERSATION(90001, "update conversation content"),//更新会话显示最后一条消息
+    C_UPDATE_CONV_NAME(90002, "update group conversation name"), //更新群聊会话名称
     OK(200, "OK");
 
     int code;

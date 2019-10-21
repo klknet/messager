@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Date;
 import java.util.List;
@@ -45,4 +46,8 @@ public interface IConversationRepository extends JpaRepository<ConversationDO, S
     @Query("update ConversationDO cd set updateTime=:updateTime,messageType=:messageType,lastMsg=:lastMsg where destId=:destId")
     void updateConversationInfo(@Param("destId")String destId, @Param("updateTime")Date updateTime, @Param("messageType")int messageType, @Param("lastMsg")String lastMsg);
 
+    @Transactional
+    @Modifying
+    @Query("update ConversationDO cd set notename=:notename where conversationId=:cid")
+    void updateNotename(@Param("cid") String cid, @Param("notename") String notename);
 }

@@ -1,5 +1,6 @@
 package com.konglk.ims.service;
 
+import com.alibaba.fastjson.JSON;
 import com.konglk.ims.cache.RedisCacheService;
 import com.konglk.ims.comparator.ConversationComparator;
 import com.konglk.ims.domain.ConversationDO;
@@ -11,8 +12,10 @@ import com.konglk.ims.event.TopicProducer;
 import com.konglk.ims.repo.IConversationRepository;
 import com.konglk.ims.repo.IGroupChatRepository;
 import com.konglk.ims.repo.IUserRepository;
+import com.konglk.ims.util.SpringUtils;
 import com.konglk.ims.util.SudokuGenerator;
 import com.konglk.model.Response;
+import com.konglk.model.ResponseStatus;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import org.apache.commons.lang3.BooleanUtils;
@@ -56,11 +59,13 @@ public class ConversationService {
     @Autowired
     private IConversationRepository conversationRepository;
     @Autowired
-    private IGroupChatRepository IGroupChatRepository;
+    private IGroupChatRepository groupChatRepository;
     @Autowired
     private NamedParameterJdbcTemplate jdbcTemplate;
     @Autowired
     private IUserRepository userRepository;
+    @Autowired
+    private SpringUtils springUtils;
 
     /*
     创建会话
@@ -228,9 +233,9 @@ public class ConversationService {
         if(CollectionUtils.isEmpty(id))
             return Collections.emptyList();
         if(id.size() == 1) {
-            return IGroupChatRepository.findByGroupId(id.get(0));
+            return groupChatRepository.findByGroupId(id.get(0));
         }
-        return IGroupChatRepository.findByIdIn(id);
+        return groupChatRepository.findByGroupIdIn(id);
     }
 
     /*
@@ -239,7 +244,7 @@ public class ConversationService {
     public List<GroupChatDO> findGroupChat(String id) {
         if(StringUtils.isEmpty(id))
             return Collections.emptyList();
-        return IGroupChatRepository.findByGroupId(id);
+        return groupChatRepository.findByGroupId(id);
     }
 
     @Transactional
@@ -271,6 +276,7 @@ public class ConversationService {
     public void groupConversation(String userId, List<String> userIds, String notename) throws IOException {
         if (StringUtils.isEmpty(userId) || CollectionUtils.isEmpty(userIds))
             return;
+        userIds.add(userId);
         List<UserDO> users = userService.findUsers(userIds.toArray(new String[userIds.size()]));
         List<String> avatars = new ArrayList<>(userIds.size()); //头像
         String uuid = UUID.randomUUID().toString();
@@ -284,7 +290,7 @@ public class ConversationService {
             }
             return member;
         }).collect(Collectors.toList());
-        IGroupChatRepository.saveAll(members);
+        groupChatRepository.saveAll(members);
         //生成九宫格头像
         BufferedImage image = sudokuGenerator.clipImages(avatars.size()>9 ? avatars.subList(0, 9).toArray(new String[9])
                 : avatars.toArray(new String[avatars.size()]));
@@ -326,6 +332,18 @@ public class ConversationService {
     public void updateConvProfile(String userId, String profileUrl) {
         conversationRepository.updateAvatar(userId, profileUrl);
     }
+
+    public void updateGroupNotename(String cid, String groupId, String notename) {
+        conversationRepository.updateNotename(cid, notename);
+        List<GroupChatDO> groupChatDOS = groupChatRepository.findByGroupId(groupId);
+        Map<String, String> data = new HashMap<>();
+        data.put("cid", cid);
+        data.put("name", notename);
+        springUtils.getApplicationContext().publishEvent(
+                new ResponseEvent(new Response(ResponseStatus.C_UPDATE_CONV_NAME, Response.CONVERSATION, JSON.toJSONString(data)),
+                groupChatDOS.stream().map(GroupChatDO::getUserId).collect(Collectors.toList())));
+    }
+
 
     private ConversationDO getConversationDO(String userId, String destId) {
         if (this.existConversation(userId, destId)) {

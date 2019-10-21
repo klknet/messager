@@ -201,8 +201,8 @@ public class MessageService {
                 conversationService.updateLastTime(messageDO.getConversationId(), userId, null, 0, "删除了一条消息");
             topicProducer.sendNotifyMessage(new ResponseEvent(
                     new Response(
-                            ResponseStatus.M_UPDATE_CONVERSATION,
-                            Response.MESSAGE,
+                            ResponseStatus.C_UPDATE_CONVERSATION,
+                            Response.CONVERSATION,
                             JSON.toJSONString(conversationService.findByConversationIdAndUserId(messageDO.getConversationId(), userId))),
                     userId));
         }

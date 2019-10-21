@@ -2,14 +2,9 @@ import com.alibaba.fastjson.JSON;
 import com.konglk.ims.event.ResponseEvent;
 import com.konglk.model.Response;
 import com.konglk.model.ResponseStatus;
-import org.apache.commons.lang3.StringUtils;
 
-import java.io.FileInputStream;
-import java.text.DateFormat;
-import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * Created by konglk on 2019/4/15.
@@ -25,7 +20,7 @@ public class Test {
             e.printStackTrace();
         }
 
-        ResponseEvent e = new ResponseEvent(new Response(ResponseStatus.M_UPDATE_CONVERSATION, Response.MESSAGE), "12345678");
+        ResponseEvent e = new ResponseEvent(new Response(ResponseStatus.C_UPDATE_CONVERSATION, Response.MESSAGE), "12345678");
         String str = JSON.toJSONString(e);
         System.out.println(str);
         ResponseEvent e1 = JSON.parseObject(str, ResponseEvent.class);

@@ -88,6 +88,12 @@ public class ConversationController {
         return conversationService.findGroupChat(id);
     }
 
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @PostMapping("/changeGroupChatName")
+    public void changeGroupChatName(String id, String groupId, String name) {
+        conversationService.updateGroupNotename(id, groupId, name);
+    }
+
     @GetMapping("/test")
     public Object test(@RequestParam String id) {
         return "id=" + id + System.currentTimeMillis();

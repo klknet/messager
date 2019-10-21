@@ -10,6 +10,7 @@ public class Response implements Serializable {
     public static int HEART = 0;
     public static int USER = 1;
     public static int MESSAGE = 2;
+    public static int CONVERSATION = 3;
 
     private int code;
     private String message;

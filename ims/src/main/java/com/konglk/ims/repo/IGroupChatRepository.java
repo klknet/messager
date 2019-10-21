@@ -12,7 +12,7 @@ import java.util.List;
  */
 public interface IGroupChatRepository extends JpaRepository<GroupChatDO, String> {
 
-    List<GroupChatDO> findByIdIn(List<String> ids);
+    List<GroupChatDO> findByGroupIdIn(List<String> ids);
     List<GroupChatDO> findByUserId(String userId);
 
     List<GroupChatDO> findByGroupId(String groupId);
