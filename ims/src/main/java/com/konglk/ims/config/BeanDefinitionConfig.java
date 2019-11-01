@@ -41,6 +41,7 @@ public class BeanDefinitionConfig  {
     public PooledConnectionFactory pooledConnectionFactory() {
         ActiveMQConnectionFactory factory = new ActiveMQConnectionFactory(username, pwd, url);
         PooledConnectionFactory pooledConnectionFactory = new PooledConnectionFactory();
+        pooledConnectionFactory.setMaxConnections(5);
         pooledConnectionFactory.setConnectionFactory(factory);
         return pooledConnectionFactory;
     }

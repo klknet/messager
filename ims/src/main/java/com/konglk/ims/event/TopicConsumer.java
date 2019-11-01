@@ -28,7 +28,6 @@ public class TopicConsumer {
     private NotifyListenerImpl notifyListener;
     @Autowired
     private TopicNameManager topicNameManager;
-    private TopicConnection connection;
 
     @PostConstruct
     public void consume() {
@@ -41,10 +40,10 @@ public class TopicConsumer {
 
     public void start() throws JMSException {
         String[] names = topicNameManager.topics();
-        connection = factory.createTopicConnection();
-        connection.start();
-        //聊天消息topic
         for(int i=0; i<names.length; i++) {
+            //聊天消息topic
+            TopicConnection connection = factory.createTopicConnection();
+            connection.start();
             TopicSession session = connection.createTopicSession(false, Session.AUTO_ACKNOWLEDGE);
             Topic topic = session.createTopic(names[i]);
             MessageConsumer consumer = session.createConsumer(topic);
@@ -52,6 +51,8 @@ public class TopicConsumer {
             logger.info("consumer ready for {}", names[i]);
         }
         //通知类topic
+        TopicConnection connection = factory.createTopicConnection();
+        connection.start();
         TopicSession session = connection.createTopicSession(false, Session.AUTO_ACKNOWLEDGE);
         Topic topic = session.createTopic(topicNameManager.getNotifyName());
         MessageConsumer consumer = session.createConsumer(topic);
@@ -59,16 +60,5 @@ public class TopicConsumer {
         logger.info("consumer ready for {}", topicNameManager.getNotifyName());
     }
 
-    @PreDestroy
-    public void closeConnection() {
-        if (connection != null) {
-            try {
-                System.out.println("close consumer queue"+connection.toString());
-                connection.close();
-            } catch (JMSException e) {
-                logger.error("failed to release connection {}", connection.toString());
-            }
-        }
-    }
 
 }
