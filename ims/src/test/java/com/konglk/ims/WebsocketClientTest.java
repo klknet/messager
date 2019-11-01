@@ -72,7 +72,7 @@ public class WebsocketClientTest {
         for(int i=end-start; i<end-3; i++) {
             final String unique = ""+i;
             taskExecutor.submit(() -> clients.add(connect(unique, unique)));
-            connect(unique, unique);
+//            connect(unique, unique);
         }
         long s = System.currentTimeMillis();
         while (true) {
