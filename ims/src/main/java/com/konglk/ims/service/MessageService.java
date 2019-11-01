@@ -234,11 +234,11 @@ public class MessageService {
      */
     public void notifyAll(MessageDO message, Response response) {
         if (message != null) {
-            if (presenceManager.haveMsg(message.getMessageId())) {
-                presenceManager.removeMsg(message.getMessageId());
-                return;
-            }
-            presenceManager.consumeMsg(message.getMessageId());
+//            if (presenceManager.haveMsg(message.getMessageId())) {
+//                presenceManager.removeMsg(message.getMessageId());
+//                return;
+//            }
+//            presenceManager.consumeMsg(message.getMessageId());
             if(new Integer(0).equals(message.getChatType())) {
                 //消息发送自己和对方
                 ResponseEvent event = new ResponseEvent(response, Arrays.asList(message.getUserId(), message.getDestId()));
