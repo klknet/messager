@@ -19,6 +19,7 @@ import javax.jms.*;
  * Created by konglk on 2019/4/20.
  */
 @Service
+//@Profile("local")
 public class TopicConsumer {
 
     private Logger logger = LoggerFactory.getLogger(getClass());
@@ -47,7 +48,7 @@ public class TopicConsumer {
             TopicConnection connection = factory.createTopicConnection();
             connection.start();
             TopicSession session = connection.createTopicSession(false, Session.AUTO_ACKNOWLEDGE);
-            Topic topic = session.createTopic(names[i]);
+            Topic topic = session.createTopic(names[i]+"?consumer.prefetchSize=10");
             MessageConsumer consumer = session.createConsumer(topic);
             consumer.setMessageListener(chatListener);
             logger.info("consumer ready for {}", names[i]);
