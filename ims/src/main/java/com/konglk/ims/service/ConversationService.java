@@ -244,7 +244,12 @@ public class ConversationService {
     public List<GroupChatDO> findGroupChat(String id) {
         if(StringUtils.isEmpty(id))
             return Collections.emptyList();
-        return groupChatRepository.findByGroupId(id);
+        List<GroupChatDO> groupChat = cacheService.getGroupChat(id);
+        if (groupChat == null) {
+            groupChat = groupChatRepository.findByGroupId(id);
+            cacheService.setGroupChat(id, groupChat);
+        }
+        return groupChat;
     }
 
     @Transactional

@@ -1,6 +1,7 @@
 package com.konglk.ims.cache;
 
 import com.alibaba.fastjson.JSON;
+import com.konglk.ims.domain.GroupChatDO;
 import com.konglk.ims.model.FileMeta;
 import com.konglk.model.Response;
 import org.apache.commons.lang3.BooleanUtils;
@@ -14,6 +15,7 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
+import java.security.acl.Group;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
@@ -181,6 +183,21 @@ public class RedisCacheService {
                 return null;
             }
         });
+    }
+
+    public void setGroupChat(String id, List<GroupChatDO> groupChat) {
+        String key = Constants.GOURP_CHAT+":"+id;
+        redisTemplate.opsForValue().set(key, JSON.toJSONString(groupChat));
+        redisTemplate.expire(key, 5L, TimeUnit.MINUTES);
+    }
+
+    public List<GroupChatDO> getGroupChat(String id) {
+        String key = Constants.GOURP_CHAT+":"+id;
+        Object v = redisTemplate.opsForValue().get(key);
+        if (v==null) {
+            return null;
+        }
+        return JSON.parseArray(v.toString(), GroupChatDO.class);
     }
 
 }

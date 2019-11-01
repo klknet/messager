@@ -15,6 +15,7 @@ public class Constants {
     public static String NOT_MODIFIED = "ims:last:modify";
     public static String MESSAGE_ACK = "ims:msg:ack";
     public static String USER_ONLINE = "ims:user:online";
+    public static String GOURP_CHAT = "ims:group:chat";
 
     //config name
     public static String CONFIG_TEST_USER_NUMBER = "test_user_number";
