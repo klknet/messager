@@ -6,7 +6,6 @@ import com.konglk.ims.cache.RedisCacheService;
 import com.konglk.ims.domain.GroupChatDO;
 import com.konglk.ims.domain.MessageDO;
 import com.konglk.ims.event.TopicProducer;
-import com.konglk.ims.repo.IMessageRepository;
 import com.konglk.ims.service.ConversationService;
 import com.konglk.ims.service.MessageService;
 import com.konglk.model.Request;
@@ -41,6 +40,7 @@ public class MessageHandler {
     private RedisCacheService redisCacheService;
     private Deque<MessageDO> msgQueue = new ConcurrentLinkedDeque<>();
 
+
     public void process(Request request, ChatEndPoint client) throws IOException {
         switch (request.getType()) {
             case 0:  //ping
@@ -65,6 +65,7 @@ public class MessageHandler {
                 if (diff > Constants.INTERVAL) {
                     logger.info("slow transfer msg on network cost time {}", diff);
                 }
+                messageService.notifyAll(messageDO, new Response(ResponseStatus.M_TRANSFER_MESSAGE, Response.MESSAGE, request.getData()));
                 //消息发送到mq
                 producer.sendChatMessage(request.getData(), client.getConversationHash(messageDO.getConversationId()));
                 diff = System.currentTimeMillis()-receiveTs;

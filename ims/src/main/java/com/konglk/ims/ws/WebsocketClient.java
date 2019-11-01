@@ -44,7 +44,7 @@ public class WebsocketClient {
         this.userSession = userSession;
         sendMessage(new Request(0, "ping"));
         Calendar c = Calendar.getInstance();
-        c.add(Calendar.MINUTE, 1);
+        c.add(Calendar.SECOND, 10);
         taskScheduler.schedule(() -> {
             this.future = taskScheduler.scheduleAtFixedRate(() -> {
                 if (seq >= 8) {

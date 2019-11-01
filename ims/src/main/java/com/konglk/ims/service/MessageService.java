@@ -10,6 +10,7 @@ import com.konglk.ims.model.FileDetail;
 import com.konglk.ims.repo.IMessageRepository;
 import com.konglk.ims.util.SpringUtils;
 import com.konglk.ims.ws.MessageHandler;
+import com.konglk.ims.ws.PresenceManager;
 import com.konglk.model.Response;
 import com.konglk.model.ResponseStatus;
 import com.mongodb.client.gridfs.model.GridFSFile;
@@ -54,6 +55,8 @@ public class MessageService {
     private MessageHandler messageHandler;
     @Autowired
     private ThreadPoolTaskScheduler taskScheduler;
+    @Autowired
+    private PresenceManager presenceManager;
 
     /**
      *
@@ -231,6 +234,11 @@ public class MessageService {
      */
     public void notifyAll(MessageDO message, Response response) {
         if (message != null) {
+            if (presenceManager.haveMsg(message.getMessageId())) {
+                presenceManager.removeMsg(message.getMessageId());
+                return;
+            }
+            presenceManager.consumeMsg(message.getMessageId());
             if(new Integer(0).equals(message.getChatType())) {
                 //消息发送自己和对方
                 ResponseEvent event = new ResponseEvent(response, Arrays.asList(message.getUserId(), message.getDestId()));

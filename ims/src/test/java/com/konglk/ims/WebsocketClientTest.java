@@ -72,12 +72,12 @@ public class WebsocketClientTest {
         for(int i=end-start; i<end-3; i++) {
             final String unique = ""+i;
             taskExecutor.submit(() -> clients.add(connect(unique, unique)));
-//            connect(unique, unique);
+            connect(unique, unique);
         }
         long s = System.currentTimeMillis();
         while (true) {
             long e = System.currentTimeMillis();
-            if (e-s > 1000*60*5)
+            if (e-s > 1000*60*3)
                 break;
             else {
                 try {
