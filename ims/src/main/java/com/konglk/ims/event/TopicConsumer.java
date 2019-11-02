@@ -48,7 +48,7 @@ public class TopicConsumer {
             TopicConnection connection = factory.createTopicConnection();
             connection.start();
             TopicSession session = connection.createTopicSession(false, Session.AUTO_ACKNOWLEDGE);
-            Topic topic = session.createTopic(names[i]+"?consumer.prefetchSize=10");
+            Topic topic = session.createTopic(names[i]+"?consumer.prefetchSize=100");
             MessageConsumer consumer = session.createConsumer(topic);
             consumer.setMessageListener(chatListener);
             logger.info("consumer ready for {}", names[i]);

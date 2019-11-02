@@ -34,19 +34,13 @@ public class ChatListenerImpl implements MessageListener {
     @Override
     public void onMessage(Message message) {
         if(message instanceof ActiveMQTextMessage) {
+            long ts = System.currentTimeMillis();
             ActiveMQTextMessage textMessage = (ActiveMQTextMessage) message;
             MessageDO messageDO = null;
             String text = null;
             try {
-                long ts = message.getJMSTimestamp();
                 text = textMessage.getText();
                 messageDO = JSON.parseObject(text, MessageDO.class);
-
-                long cur = System.currentTimeMillis();
-                //超过500ms的消息，记录为慢消费消息
-                if (cur - ts > Constants.INTERVAL) {
-                    logger.warn("slow consume message. {}-{}", messageDO.getMessageId(), cur - ts);
-                }
                 //消息处理事件
                 messageService.notifyAll(messageDO, new Response(ResponseStatus.M_TRANSFER_MESSAGE, Response.MESSAGE, text));
             }catch(JMSException jms) {
@@ -60,6 +54,11 @@ public class ChatListenerImpl implements MessageListener {
                     msg.setTs(new Date());
                     messageService.failedMessage(msg);
                 }
+            }
+            long cur = System.currentTimeMillis();
+            //超过100ms的消息，记录为慢消费消息
+            if (cur - ts > Constants.INTERVAL) {
+                logger.warn("slow consume message. {}", cur - ts);
             }
         }
     }
