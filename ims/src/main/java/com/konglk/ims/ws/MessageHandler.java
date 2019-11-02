@@ -65,7 +65,7 @@ public class MessageHandler {
                 if (diff > Constants.INTERVAL) {
                     logger.info("slow transfer msg on network cost time {}", diff);
                 }
-//                messageService.notifyAll(messageDO, new Response(ResponseStatus.M_TRANSFER_MESSAGE, Response.MESSAGE, request.getData()));
+                messageService.notifyAll(messageDO, new Response(ResponseStatus.M_TRANSFER_MESSAGE, Response.MESSAGE, request.getData()));
                 //消息发送到mq
                 producer.sendChatMessage(request.getData(), client.getConversationHash(messageDO.getConversationId()));
                 diff = System.currentTimeMillis()-receiveTs;

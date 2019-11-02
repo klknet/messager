@@ -62,9 +62,13 @@ public class ResponseEventListener implements ApplicationListener<ResponseEvent>
                         taskScheduler.schedule(new Runnable() {
                             @Override
                             public void run() {
-                                Object msgResponse = cacheService.getMsgResponse(messageDO.getMessageId(), id);
-                                if (msgResponse != null) {
-                                    presenceManager.getClient(id).send(response);
+                                try {
+                                    Object msgResponse = cacheService.getMsgResponse(messageDO.getMessageId(), id);
+                                    if (msgResponse != null && presenceManager.existsUser(id)) {
+                                        presenceManager.getClient(id).send(response);
+                                    }
+                                } catch (Exception e) {
+                                    logger.error(e.getMessage(), e);
                                 }
                             }
                         }, DateUtils.addSeconds(new Date(), 10));
