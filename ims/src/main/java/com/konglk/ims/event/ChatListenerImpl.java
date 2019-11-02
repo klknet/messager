@@ -47,16 +47,9 @@ public class ChatListenerImpl implements MessageListener {
                 logger.error(jms.getMessage(), jms);
             } catch (Exception e) {
                 logger.error(e.getMessage(), e);
-                if (messageDO != null && !messageService.existsByMsgId(messageDO.getMessageId())) {
-                    FailedMessageDO msg = new FailedMessageDO();
-                    msg.setMessageId(messageDO.getMessageId());
-                    msg.setText(text);
-                    msg.setTs(new Date());
-                    messageService.failedMessage(msg);
-                }
             }
             long cur = System.currentTimeMillis();
-            //超过100ms的消息，记录为慢消费消息
+            //超过600ms的消息，记录为慢消费消息
             if (cur - ts > Constants.INTERVAL) {
                 logger.warn("slow consume message. {}", cur - ts);
             }
