@@ -8,4 +8,4 @@ spring:
   redis:
     host: ${host}
 activemq:
-  url: failover:(tcp://${host}:61616)
+  url: tcp://${host}:61616

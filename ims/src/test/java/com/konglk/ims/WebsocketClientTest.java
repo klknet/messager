@@ -77,7 +77,7 @@ public class WebsocketClientTest {
         long s = System.currentTimeMillis();
         while (true) {
             long e = System.currentTimeMillis();
-            if (e-s > 1000*60*3)
+            if (e-s > 1000*60*5)
                 break;
             else {
                 try {
