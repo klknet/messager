@@ -61,7 +61,7 @@ public class BeanDefinitionConfig  {
     @Bean
     public JedisPoolConfig jedisPool() {
         JedisPoolConfig jedisPoolConfig = new JedisPoolConfig();
-        jedisPoolConfig.setMinIdle(2);
+        jedisPoolConfig.setMinIdle(8);
         return jedisPoolConfig;
     }
 
@@ -91,15 +91,13 @@ public class BeanDefinitionConfig  {
 
     private static final int corePoolSize = 8;       		// 核心线程数（默认线程数）
     private static final int maxPoolSize = 64;			    // 最大线程数
-    private static final int keepAliveTime = 10;			// 允许线程空闲时间（单位：默认为秒）
-    private static final int queueCapacity = 512;			// 缓冲队列数
     private static final String threadNamePrefix = "Async-Service-"; // 线程池名前缀
 
 
     @Bean
     public ThreadPoolTaskScheduler taskScheduler() {
         ThreadPoolTaskScheduler scheduler = new ThreadPoolTaskScheduler();
-        scheduler.setPoolSize(16);
+        scheduler.setPoolSize(8);
         scheduler.setThreadNamePrefix("Scheduler-Service-");
         return scheduler;
     }
@@ -109,8 +107,6 @@ public class BeanDefinitionConfig  {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
         executor.setCorePoolSize(corePoolSize);
         executor.setMaxPoolSize(maxPoolSize);
-        executor.setQueueCapacity(queueCapacity);
-        executor.setKeepAliveSeconds(keepAliveTime);
         executor.setThreadNamePrefix(threadNamePrefix);
 
         // 线程池对拒绝任务的处理策略
