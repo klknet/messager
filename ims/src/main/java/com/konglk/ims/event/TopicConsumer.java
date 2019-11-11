@@ -43,18 +43,18 @@ public class TopicConsumer {
 
     public void start() throws JMSException {
         String[] names = topicNameManager.topics();
+        TopicConnection connection = factory.createTopicConnection();
         for(int i=0; i<names.length; i++) {
             //聊天消息topic
-            TopicConnection connection = factory.createTopicConnection();
             connection.start();
             TopicSession session = connection.createTopicSession(false, Session.AUTO_ACKNOWLEDGE);
-            Topic topic = session.createTopic(names[i]+"?consumer.prefetchSize=100");
+            Topic topic = session.createTopic(names[i]);
             MessageConsumer consumer = session.createConsumer(topic);
             consumer.setMessageListener(chatListener);
             logger.info("consumer ready for {}", names[i]);
         }
         //通知类topic
-        TopicConnection connection = factory.createTopicConnection();
+        connection = factory.createTopicConnection();
         connection.start();
         TopicSession session = connection.createTopicSession(false, Session.AUTO_ACKNOWLEDGE);
         Topic topic = session.createTopic(topicNameManager.getNotifyName());
