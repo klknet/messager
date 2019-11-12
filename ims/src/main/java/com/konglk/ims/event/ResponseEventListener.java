@@ -13,7 +13,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationListener;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.stereotype.Component;
 
@@ -38,7 +37,6 @@ public class ResponseEventListener implements ApplicationListener<ResponseEvent>
     private Logger logger = LoggerFactory.getLogger(getClass());
 
     @Override
-    @Async
     public void onApplicationEvent(ResponseEvent event) {
         if(event.getSource() instanceof Response) {
             Response response = (Response) event.getSource();
@@ -58,7 +56,7 @@ public class ResponseEventListener implements ApplicationListener<ResponseEvent>
                         String data = response.getData();
                         MessageDO messageDO = JSON.parseObject(data, MessageDO.class);
                         cacheService.setMsgResponse(messageDO.getMessageId(), id);
-                        //5秒无ack会重传
+                        //8秒无ack会重传
                         taskScheduler.schedule(new Runnable() {
                             @Override
                             public void run() {
@@ -71,7 +69,7 @@ public class ResponseEventListener implements ApplicationListener<ResponseEvent>
                                     logger.error(e.getMessage(), e);
                                 }
                             }
-                        }, DateUtils.addSeconds(new Date(), 5));
+                        }, DateUtils.addSeconds(new Date(), 8));
                     }
                     ChatEndPoint client = presenceManager.getClient(id);
                     client.send(response);
