@@ -6,6 +6,7 @@ import com.konglk.ims.domain.MessageDO;
 import com.konglk.ims.model.FileDetail;
 import com.konglk.ims.model.FileMeta;
 import com.konglk.ims.event.TopicProducer;
+import com.konglk.ims.ws.MessageHandler;
 import com.mongodb.client.gridfs.GridFSBucket;
 import com.mongodb.client.gridfs.GridFSBuckets;
 import com.mongodb.client.gridfs.model.GridFSFile;
@@ -49,6 +50,8 @@ public class FileController {
     private ThreadPoolTaskExecutor executor;
     @Autowired
     private TopicProducer producer;
+    @Autowired
+    private MessageHandler messageHandler;
 
     private Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -165,6 +168,7 @@ public class FileController {
                 GridFSFile gridFSFile = gridFsTemplate.findOne(Query.query(Criteria.where("_id").is(objectId)));
                 messageDO.setFileDetail(new FileDetail(gridFSFile.getLength(), gridFSFile.getFilename(),
                         gridFSFile.getMetadata()==null?"":gridFSFile.getMetadata().getString("_contentType")));
+                messageHandler.addMsg(messageDO);
                 producer.sendChatMessage(JSON.toJSONString(messageDO), messageDO.getConversationId().hashCode() & Integer.MAX_VALUE);
                 in.close();
                 file.delete();

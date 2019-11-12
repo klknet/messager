@@ -77,7 +77,7 @@ public class WebsocketClientTest {
         long s = System.currentTimeMillis();
         while (true) {
             long e = System.currentTimeMillis();
-            if (e-s > 1000*60*5)
+            if (e-s > 1000*60*10)
                 break;
             else {
                 try {
@@ -87,7 +87,10 @@ public class WebsocketClientTest {
                 }
             }
         }
-        clients.forEach(client -> client.release());
+        clients.forEach(client -> {
+            if (client != null)
+                client.release();
+        });
         System.out.println("#######end##########3"+new Date());
     }
 

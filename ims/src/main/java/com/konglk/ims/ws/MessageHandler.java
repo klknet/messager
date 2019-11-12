@@ -93,7 +93,11 @@ public class MessageHandler {
         }
     }
 
-    /**
+    public void addMsg(MessageDO msg) {
+        msgQueue.add(msg);
+    }
+
+  /**
      * 返回队列中的msg
      * @param msgId
      * @return
