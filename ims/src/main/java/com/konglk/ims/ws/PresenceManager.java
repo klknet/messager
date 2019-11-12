@@ -11,8 +11,8 @@ import java.util.concurrent.ConcurrentHashMap;
 
 @Component
 public class PresenceManager {
-    private final Map<String, ChatEndPoint> clientMap = new ConcurrentHashMap<>(256);//在线客户端连接
-    private Map<String, Integer> consumeMap = new ConcurrentHashMap<>(256);  //消息消费标识
+    private final Map<String, ChatEndPoint> clientMap = new ConcurrentHashMap<>(512);//在线客户端连接
+    private Map<String, Integer> consumeMap = new ConcurrentHashMap<>(512);  //消息消费标识
 
 
     @Autowired

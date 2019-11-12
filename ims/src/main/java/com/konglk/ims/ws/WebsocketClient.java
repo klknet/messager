@@ -53,7 +53,7 @@ public class WebsocketClient {
                 }
                 MessageDO messageDO = getMessageDO();
                 sendMessage(new Request(2, JSON.toJSONString(messageDO)));
-            }, 5000L);
+            }, 15000L);
         }, c.getTime());
     }
 
