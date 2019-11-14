@@ -24,6 +24,8 @@ import org.springframework.util.CollectionUtils;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -128,8 +130,14 @@ public class UserTest {
             users.add(userDO);
         }
         userService.batchInsert(users);
-        batchAddFriend(n, time);
+//        batchAddFriend(n, time);
         configService.updateConfigValue(Constants.CONFIG_TEST_USER_SEQUENCE, base+n+"");
+    }
+
+    @Test
+    public void addFriend() {
+        LocalDateTime from = LocalDateTime.of(2019, 11, 13, 0, 0, 0);
+        batchAddFriend(256, Date.from(from.atZone(ZoneId.systemDefault()).toInstant()));
     }
 
     @Test

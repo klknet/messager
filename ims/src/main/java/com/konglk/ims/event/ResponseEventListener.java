@@ -1,10 +1,10 @@
 package com.konglk.ims.event;
 
 import com.alibaba.fastjson.JSON;
-import com.konglk.ims.cache.RedisCacheService;
 import com.konglk.ims.domain.MessageDO;
 import com.konglk.ims.service.NotifyService;
 import com.konglk.ims.ws.ChatEndPoint;
+import com.konglk.ims.ws.MessageHandler;
 import com.konglk.ims.ws.PresenceManager;
 import com.konglk.model.Response;
 import com.konglk.model.ResponseStatus;
@@ -32,9 +32,9 @@ public class ResponseEventListener implements ApplicationListener<ResponseEvent>
     private NotifyService notifyService;
     @Autowired
     private ThreadPoolTaskScheduler taskScheduler;
-    @Autowired
-    private RedisCacheService cacheService;
     private Logger logger = LoggerFactory.getLogger(getClass());
+    @Autowired
+    private MessageHandler messageHandler;
 
     @Override
     public void onApplicationEvent(ResponseEvent event) {
@@ -55,14 +55,15 @@ public class ResponseEventListener implements ApplicationListener<ResponseEvent>
                     if (response.getType() == 2 && response.getCode() == ResponseStatus.M_TRANSFER_MESSAGE.getCode()) {
                         String data = response.getData();
                         MessageDO messageDO = JSON.parseObject(data, MessageDO.class);
-                        cacheService.setMsgResponse(messageDO.getMessageId(), id);
+                        messageHandler.getAckMap().put(messageDO.getMessageId()+id, 1);
                         //8秒无ack会重传
                         taskScheduler.schedule(new Runnable() {
                             @Override
                             public void run() {
                                 try {
-                                    Object msgResponse = cacheService.getMsgResponse(messageDO.getMessageId(), id);
-                                    if (msgResponse != null && presenceManager.existsUser(id)) {
+//                                    Object msgResponse = cacheService.getMsgResponse(messageDO.getMessageId(), id);
+                                    if (messageHandler.getAckMap().containsKey(messageDO.getMessageId()+id)
+                                            && presenceManager.existsUser(id)) {
                                         presenceManager.getClient(id).send(response);
                                     }
                                 } catch (Exception e) {

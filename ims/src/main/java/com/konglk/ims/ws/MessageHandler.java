@@ -22,6 +22,7 @@ import org.springframework.util.CollectionUtils;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.stream.Collectors;
 
@@ -38,7 +39,8 @@ public class MessageHandler {
     private ConversationService conversationService;
     @Autowired
     private RedisCacheService redisCacheService;
-    private Deque<MessageDO> msgQueue = new ConcurrentLinkedDeque<>();
+    private Deque<MessageDO> msgQueue = new ConcurrentLinkedDeque<>(); //缓存消息，批量保存
+    private Map<String, Integer> ackMap = new ConcurrentHashMap<>(1024);
 
 
     public void process(Request request, ChatEndPoint client) throws IOException {
@@ -49,7 +51,7 @@ public class MessageHandler {
                 break;
             case 1:  //ack
                 String msgId = request.getData();
-                redisCacheService.ackMsg(msgId, client.getUserId());
+                ackMap.remove(msgId+client.getUserId());
                 break;
             case 2:  //message
                 MessageDO messageDO = JSON.parseObject(request.getData(), MessageDO.class);
@@ -97,7 +99,11 @@ public class MessageHandler {
         msgQueue.add(msg);
     }
 
-  /**
+    public Map<String, Integer> getAckMap() {
+        return ackMap;
+    }
+
+    /**
      * 返回队列中的msg
      * @param msgId
      * @return

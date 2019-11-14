@@ -103,12 +103,14 @@ public class ChatEndPoint {
     public void send(Response response) {
         try {
             String text = JSON.toJSONString(response);
-            synchronized (session) {
-                if (session.isOpen()) {
-                    session.getBasicRemote()
-                            .sendText(text);
-                    if (response.getType() == Response.USER)
-                        logger.info("{}-{} reply message - {}", nickname, userId, response.getMessage());
+            if (session.isOpen()) {
+                synchronized (session) {
+                    if (session.isOpen()) {
+                        session.getBasicRemote()
+                                .sendText(text);
+                        if (response.getType() == Response.USER)
+                            logger.info("{}-{} reply message - {}", nickname, userId, response.getMessage());
+                    }
                 }
             }
         } catch (Exception e) {

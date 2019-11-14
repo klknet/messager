@@ -65,7 +65,7 @@ public class WebsocketClient {
             Response response = JSON.parseObject(message, Response.class);
             if (response.getType() == 0) {
                 Calendar cal = Calendar.getInstance();
-                cal.add(Calendar.SECOND, 5);
+                cal.add(Calendar.SECOND, 35);
                 taskScheduler.schedule(()->
                         sendMessage(new Request(0, "ping")), cal.getTime());
             }
@@ -73,7 +73,7 @@ public class WebsocketClient {
                 num++;
                 MessageDO msg = JSON.parseObject(response.getData(), MessageDO.class);
                 sendMessage(new Request(1, msg.getMessageId()));
-//                System.out.println(user.getUsername()+" receive from "+msg.getContent()+" "+msg.getCreateTime()+" "+num);
+                System.out.println(user.getUsername()+" receive from "+msg.getContent()+" "+msg.getCreateTime()+" "+num);
             }
         } catch (Exception e) {
             e.printStackTrace();
