@@ -12,6 +12,7 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -42,7 +43,7 @@ public class ConversationController {
     public void groupChat(String userId, String userIds, String notename) {
         taskExecutor.submit(()-> {
             try {
-                conversationService.groupConversation(userId, Arrays.asList(userIds.split(",")), notename);
+                conversationService.groupConversation(userId, new ArrayList<>(Arrays.asList(userIds.split(","))), notename);
             } catch (Exception e) {
                 logger.error(e.getMessage(), e);
             }
