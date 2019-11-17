@@ -7,7 +7,7 @@ spring:
       auth: true
       database: ims
       authenticationDatabase: ims
-      min-connection-per-host: 1
+      min-connection-per-host: 2
       max-connection-per-host: 5
       max-wait-time: 10000
   datasource:
