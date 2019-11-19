@@ -43,18 +43,21 @@ public class WebsocketClient {
         System.out.println("opening websocket "+user.getUsername());
         this.userSession = userSession;
         sendMessage(new Request(0, "ping"));
-        Calendar c = Calendar.getInstance();
-        c.add(Calendar.SECOND, 10);
-        taskScheduler.schedule(() -> {
-            this.future = taskScheduler.scheduleAtFixedRate(() -> {
-                if (seq >= 8) {
-                    this.future.cancel(true);
-                    return;
-                }
-                MessageDO messageDO = getMessageDO();
-                sendMessage(new Request(2, JSON.toJSONString(messageDO)));
-            }, 15000L);
-        }, c.getTime());
+        int hash = Integer.parseInt(user.getUsername()) & 1;
+        if (hash == 1) {
+            Calendar c = Calendar.getInstance();
+            c.add(Calendar.SECOND, 10);
+            taskScheduler.schedule(() -> {
+                this.future = taskScheduler.scheduleAtFixedRate(() -> {
+                    if (seq >= 16) {
+                        this.future.cancel(true);
+                        return;
+                    }
+                    MessageDO messageDO = getMessageDO();
+                    sendMessage(new Request(2, JSON.toJSONString(messageDO)));
+                }, 30000L);
+            }, c.getTime());
+        }
     }
 
 
@@ -73,7 +76,7 @@ public class WebsocketClient {
                 num++;
                 MessageDO msg = JSON.parseObject(response.getData(), MessageDO.class);
                 sendMessage(new Request(1, msg.getMessageId()));
-                System.out.println(user.getUsername()+" receive from "+msg.getContent()+" "+msg.getCreateTime()+" "+num);
+//                System.out.println(user.getUsername()+" receive from "+msg.getContent()+" "+msg.getCreateTime()+" "+num);
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -114,14 +117,17 @@ public class WebsocketClient {
     }
 
     private MessageDO getMessageDO() {
+        int cur = Integer.parseInt(user.getUsername());
+        String[] convs = {"0a1d76eb-a4b5-4fbe-8a72-7720406dab1a", "7185ce9a-2d5c-4f29-a673-0316423eaf67"};
+        String[] destIds = {"03f86884-d245-4a98-ad30-1e2787bd6b25", "6cfa8b20-f709-4386-a81e-26ca5ea2bec3"};
         MessageDO messageDO = new MessageDO();
-        messageDO.setConversationId("0a1d76eb-a4b5-4fbe-8a72-7720406dab1a");
+        messageDO.setConversationId(convs[(cur-10000)/256]);
         messageDO.setChatType(1);
         messageDO.setContent(user.getUsername()+"-"+seq++);
         messageDO.setType(0);
         messageDO.setUserId(user.getUserId());
         messageDO.setCreateTime(new Date());
-        messageDO.setDestId("03f86884-d245-4a98-ad30-1e2787bd6b25");
+        messageDO.setDestId(destIds[(cur-10000)/256]);
         messageDO.setMessageId(UUID.randomUUID().toString());
         return messageDO;
     }

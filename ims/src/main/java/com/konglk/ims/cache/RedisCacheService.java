@@ -115,31 +115,6 @@ public class RedisCacheService {
     }
 
     /**
-     * 保存需要ack的消息
-     * @param messageId
-     * @return
-     */
-    public void setMsgResponse(String messageId, String userId) {
-        String key = Constants.MESSAGE_ACK+":"+messageId;
-        redisTemplate.opsForHash().put(key, userId, "1");
-        redisTemplate.expire(key, 5, TimeUnit.MINUTES);
-    }
-
-    public void ackMsg(String messageId, String userId) {
-        String key = Constants.MESSAGE_ACK+":"+messageId;
-        redisTemplate.opsForHash().delete(key, userId);
-    }
-
-    public Object getMsgResponse(String messageId, String userId) {
-        String key = Constants.MESSAGE_ACK+":"+messageId;
-        Object event = redisTemplate.opsForHash().get(key, userId);
-        if (event == null)
-            return null;
-        redisTemplate.opsForHash().delete(key, userId);
-        return event;
-    }
-
-    /**
      * 设置全局在线状态
      * @param userId
      */

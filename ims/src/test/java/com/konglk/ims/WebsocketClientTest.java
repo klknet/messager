@@ -67,7 +67,7 @@ public class WebsocketClientTest {
         ConfigDO seq = configService.getConfigByName(Constants.CONFIG_TEST_USER_SEQUENCE);
         ConfigDO num = configService.getConfigByName(Constants.CONFIG_TEST_USER_NUMBER);
         int end = Integer.parseInt(seq.getValue());
-        int start = Integer.parseInt(num.getValue());
+        int start = Integer.parseInt(num.getValue())*2;
         List<WebsocketClient> clients = new ArrayList<>();
         for(int i=end-start; i<end-3; i++) {
             final String unique = ""+i;
