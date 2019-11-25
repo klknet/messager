@@ -8,4 +8,4 @@ spring:
   redis:
     host: ${host}
   activemq:
-    broker-url: failover(tcp://${host}:61616)
+    broker-url: failover:(tcp://${host}:61616)
