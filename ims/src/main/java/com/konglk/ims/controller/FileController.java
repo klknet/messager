@@ -174,7 +174,7 @@ public class FileController {
                         gridFSFile.getMetadata()==null?"":gridFSFile.getMetadata().getString("_contentType")));
                 messageHandler.addMsg(messageDO);
                 messageService.notifyAll(messageDO, new Response(com.konglk.model.ResponseStatus.M_TRANSFER_MESSAGE, Response.MESSAGE, JSON.toJSONString(messageDO)));
-                producer.sendChatMessage(JSON.toJSONString(messageDO), messageDO.getConversationId().hashCode() & Integer.MAX_VALUE);
+                producer.sendChatMessage(JSON.toJSONString(messageDO));
                 in.close();
                 file.delete();
             } catch (Exception e) {

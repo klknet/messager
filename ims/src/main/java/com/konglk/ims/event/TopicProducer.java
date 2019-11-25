@@ -23,8 +23,8 @@ public class TopicProducer {
      * @param text
      * @param hash
      */
-    public void sendChatMessage(String text, int hash) {
-        jmsTemplate.convertAndSend(topicNameManager.getChatName(hash), text);
+    public void sendChatMessage(String text) {
+        jmsTemplate.convertAndSend(topicNameManager.chat, text);
     }
 
     /**

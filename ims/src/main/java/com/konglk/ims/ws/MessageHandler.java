@@ -69,7 +69,7 @@ public class MessageHandler {
                 }
                 messageService.notifyAll(messageDO, new Response(ResponseStatus.M_TRANSFER_MESSAGE, Response.MESSAGE, request.getData()));
                 //消息发送到mq
-                producer.sendChatMessage(request.getData(), client.getConversationHash(messageDO.getConversationId()));
+                producer.sendChatMessage(request.getData());
                 diff = System.currentTimeMillis()-receiveTs;
                 if (diff > Constants.INTERVAL) {
                     logger.info("slow send msg to amq cost time {}", diff);

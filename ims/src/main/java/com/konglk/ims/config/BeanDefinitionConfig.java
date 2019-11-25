@@ -1,7 +1,5 @@
 package com.konglk.ims.config;
 
-import org.apache.activemq.ActiveMQConnectionFactory;
-import org.apache.activemq.jms.pool.PooledConnectionFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -11,48 +9,45 @@ import org.springframework.data.redis.connection.RedisStandaloneConfiguration;
 import org.springframework.data.redis.connection.jedis.JedisConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
+import org.springframework.jms.annotation.EnableJms;
+import org.springframework.jms.config.DefaultJmsListenerContainerFactory;
+import org.springframework.jms.config.JmsListenerContainerFactory;
 import org.springframework.jms.core.JmsTemplate;
-import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import redis.clients.jedis.JedisPoolConfig;
 
+import javax.jms.ConnectionFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 
 /**
  * Created by konglk on 2019/4/20.
  */
 @Configuration
-@EnableAsync
+@EnableJms
 public class BeanDefinitionConfig  {
 
-    @Value("${activemq.username}")
-    private String username;
-    @Value("${activemq.password}")
-    private String pwd;
-    @Value("${activemq.url}")
-    private String url;
     @Value("${spring.redis.host}")
     private String redisHost;
     @Value("${spring.redis.password}")
     private String redisPwd;
 
-    @Bean(name = "amqFactory", destroyMethod = "stop")
-    public PooledConnectionFactory pooledConnectionFactory() {
-        ActiveMQConnectionFactory factory = new ActiveMQConnectionFactory(username, pwd, url);
-        PooledConnectionFactory pooledConnectionFactory = new PooledConnectionFactory();
-        pooledConnectionFactory.setMaxConnections(5);
-        pooledConnectionFactory.setConnectionFactory(factory);
-        return pooledConnectionFactory;
+    // topic模式的ListenerContainer
+    @Bean("topicContainerFactory")
+    public JmsListenerContainerFactory<?> jmsListenerContainerTopic(ConnectionFactory activeMQConnectionFactory) {
+        DefaultJmsListenerContainerFactory factory = new DefaultJmsListenerContainerFactory();
+        factory.setPubSubDomain(true);
+        factory.setConnectionFactory(activeMQConnectionFactory);
+        return factory;
     }
 
     @Bean("jmsQueueTemplate")
-    public JmsTemplate jmsTemplate(PooledConnectionFactory factory) {
+    public JmsTemplate jmsTemplate(ConnectionFactory factory) {
         return new JmsTemplate(factory);
     }
 
     @Bean("jmsTopicTemplate")
-    public JmsTemplate jmsTopicTemplate(PooledConnectionFactory factory) {
+    public JmsTemplate jmsTopicTemplate(ConnectionFactory factory) {
         JmsTemplate jmsTemplate = new JmsTemplate(factory);
         jmsTemplate.setPubSubDomain(true);
         return jmsTemplate;

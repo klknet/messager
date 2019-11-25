@@ -12,8 +12,8 @@ import org.springframework.stereotype.Component;
 public class TopicNameManager {
 
     private int topicNum = 2; //must be power of 2.
-    private String chat = "ims.chat.";
-    private String notify = "ims.notify";
+    public static final String chat = "ims.chat";
+    public static final String notify = "ims.notify";
 
     @Autowired
     private SpringUtils springUtils;

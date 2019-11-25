@@ -7,5 +7,5 @@ spring:
     url: jdbc:mysql://${host}/messager?zeroDateTimeBehavior=convertToNull&socketTimeout=60000&autoReconnect=true&useSSL=false
   redis:
     host: ${host}
-activemq:
-  url: tcp://${host}:61616
+  activemq:
+    broker-url: failover(tcp://${host}:61616)

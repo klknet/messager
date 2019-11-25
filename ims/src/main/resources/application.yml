@@ -18,12 +18,18 @@ spring:
     hikari:
       maximum-pool-size: 8
       minimum-idle: 3
+  activemq:
+    user: amq_ims
+    password: amq_ims_123456
+    pool:
+      enabled: false
+      max-connections: 5
+      idle-timeout: 120
   jpa:
     hibernate:
       naming:
         implicit-strategy: org.hibernate.boot.model.naming.ImplicitNamingStrategyJpaCompliantImpl
         physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
-
   redis:
     port: 6379
     password: redis_ims
