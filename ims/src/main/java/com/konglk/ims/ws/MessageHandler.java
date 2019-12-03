@@ -20,6 +20,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
+import javax.annotation.PreDestroy;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -79,11 +80,24 @@ public class MessageHandler {
         }
     }
 
+    private Object lock = new Object();
+
+
     @Scheduled(cron = "*/32 * * * * *")
-    public void persistMsg() {
+    public void persist() {
         if (msgQueue.size() > 0) {
-            Deque<MessageDO> msgDOs = new LinkedList<>(msgQueue);
+            persistMsg();
+        }
+    }
+
+    @PreDestroy
+    public void persistMsg() {
+        Deque<MessageDO> msgDOs;
+        synchronized (lock) {
+            msgDOs = new LinkedList<>(msgQueue);
             msgQueue.removeAll(msgDOs);
+        }
+        if (!CollectionUtils.isEmpty(msgDOs)) {
             messageService.insertAll(msgDOs);
             incrementUnread(msgDOs);
             //更新最后一条消息的内容、时间
